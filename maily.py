@@ -7,11 +7,14 @@ import smtplib
 from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
 from email.utils import parseaddr, formataddr
+from email import encoders
 import fcntl
+import mimetypes
 
 
-def maily(subject, text, attach_list, 
+def maily(subject, text, attas, 
           to, cc, bcc, from_addr, passwd, 
           smtp, port, timeout, debuginfo):
     msg = MIMEMultipart('mixed')
@@ -22,6 +25,20 @@ def maily(subject, text, attach_list,
     msg['Cc'] = ';'.join(cc)
     to.extend(cc)
     to.extend(bcc)
+    for i in range(len(attas)):
+        ftype, encoding = mimetypes.guess_type(attas[i])
+        if (ftype is None 
+              or encoding is not None):
+            ftype = 'application/octet-stream'
+        maintype, subtype = ftype.split('/')
+        att = MIMEBase(maintype, subtype)
+        att.add_header('Content-Disposition','attachement',filename=attas[i])
+        att.add_header('Content-ID', '<%d>'%i)
+        att.add_header('X-Attachment-Id', '<%d>'%i)
+        with open(attas[i], 'rb') as f:
+            att.set_payload(f.read())
+        encoders.encode_base64(att)
+        msg.attach(att)
     try:
         server = smtplib.SMTP_SSL(smtp, port, timeout)
         if debuginfo: server.set_debuglevel(2)
@@ -48,7 +65,7 @@ def main():
             help='email content')
     parser.add_argument('--contype', default='plain', choices=['plain'],
             help='specify the content type, default is plain text')
-    parser.add_argument('-a', '--attachment', nargs='+', 
+    parser.add_argument('-a', '--attachment', nargs='+', default=[], 
             help='attachments files')
     parser.add_argument('--to', required=True, nargs='+',  
             help='addresses of receivers')
@@ -88,6 +105,11 @@ def main():
           '\n\n\n\n--------\n'\
           'This email was sent by maily (https://github.com/xinlin-z/maily),'\
           ' which is a simple command line SMTP email sending tool in Python.'
+    # check attachment list
+    for item in args.attachment:
+        if os.path.isfile(item) is False:
+            print('Attachement %s is not a file.' % item)
+            sys.exit(1)
     # check address list to, cc, bcc
     for addr in args.to:
         if check_addr(addr) is False:
