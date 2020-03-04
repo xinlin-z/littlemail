@@ -32,7 +32,8 @@ def maily(subject, text, attas,
             ftype = 'application/octet-stream'
         maintype, subtype = ftype.split('/')
         att = MIMEBase(maintype, subtype)
-        att.add_header('Content-Disposition','attachement',filename=attas[i])
+        att.add_header('Content-Disposition','attachement',
+                       filename = os.path.basename(attas[i]))
         att.add_header('Content-ID', '<%d>'%i)
         att.add_header('X-Attachment-Id', '<%d>'%i)
         with open(attas[i], 'rb') as f:
@@ -40,8 +41,15 @@ def maily(subject, text, attas,
         encoders.encode_base64(att)
         msg.attach(att)
     try:
-        server = smtplib.SMTP_SSL(smtp, port, timeout)
-        if debuginfo: server.set_debuglevel(2)
+        if port == 465:
+            server = smtplib.SMTP_SSL(smtp, port, timeout)
+        else:
+            server = smtplib.SMTP(smtp, port, timeout)
+        if debuginfo: 
+            if sys.version.split()[0][:3] >= '3.5':
+                server.set_debuglevel(2)
+            else: server.set_debuglevel(1)
+        if port == 587: server.starttls()
         server.login(from_addr, passwd)
         server.sendmail(from_addr, to, msg.as_string())
         server.quit()
@@ -78,10 +86,9 @@ def main():
     parser.add_argument('--passwd', required=True,
             help='password of sender email account')
     parser.add_argument('--smtp', required=True,
-            help='SMTP server of sender email account, '
-                 'only support SSL/TSL connection')
-    parser.add_argument('--port', type=int, default=465,  
-            help='customize the port for SMTP server, default=465')
+            help='SMTP server of sender email account')
+    parser.add_argument('--port', type=int, default=587, choices=[25,465,587], 
+            help='choose the port for SMTP server, default=587')
     parser.add_argument('--timeout', type=int, default=3,  
             help='connection timeout, default=3s')
     parser.add_argument('--debuginfo', action='store_true',  
