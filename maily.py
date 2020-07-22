@@ -67,7 +67,7 @@ def check_addr(addr):
 
 
 # contants
-VER = 'maily: a cmd line SMTP email sending tool in Python, V0.16'
+VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.16'
 
 
 def main():
@@ -81,6 +81,7 @@ def main():
         $ python3 maily.py inline --subject a_title --content test_content
         --to to@qq.com --fromaddr from@qq.com --passwd your_password
         --smtp smtp.qq.com
+
         You can also specify -a for attachments.
         The default --contype is plain.
         --cc and --bcc are for other receivers.
@@ -97,6 +98,7 @@ def main():
 
                 ''')
     )
+    parser.add_argument('-V', '--version', action='version', version=VER)
     subparser = parser.add_subparsers(dest='subcmd',
                                       title='sub commands')
     parser_inline = subparser.add_parser('inline',
