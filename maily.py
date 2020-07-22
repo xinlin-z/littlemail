@@ -3,6 +3,7 @@ import os
 import sys
 import re
 import argparse
+import textwrap
 import smtplib
 from email.header import Header
 from email.mime.text import MIMEText
@@ -65,11 +66,44 @@ def check_addr(addr):
     else: return False
 
 
+# contants
+VER = 'maily: a cmd line SMTP email sending tool in Python, V0.16'
+
+
 def main():
-    parser = argparse.ArgumentParser()
-    subparser = parser.add_subparsers(dest='subcmd')
-    parser_inline = subparser.add_parser('inline', help='inline')
-    parser_infile = subparser.add_parser('infile', help='infile')
+    parser = argparse.ArgumentParser(
+                formatter_class = argparse.RawDescriptionHelpFormatter,
+                description = VER + textwrap.dedent('''
+
+    Usage Examples:
+
+    1), inline
+        $ python3 maily.py inline --subject a_title --content test_content
+        --to to@qq.com --fromaddr from@qq.com --passwd your_password
+        --smtp smtp.qq.com
+        You can also specify -a for attachments.
+        The default --contype is plain.
+        --cc and --bcc are for other receivers.
+        The default --port is 587, you can set it to 25 or 465, or any int.
+
+        One more thing, there three ways to fill the email's content:
+        (a), fill --content options in cmd line;
+        (b), $ python3 maily.py ..... < content.txt
+        (c), $ echo your_content | python3 maily.py ...
+
+        help info for inline:
+        $ python3 maily.py inline -h
+
+
+                ''')
+    )
+    subparser = parser.add_subparsers(dest='subcmd',
+                                      title='sub commands')
+    parser_inline = subparser.add_parser('inline',
+            help='all parameters are specified in cmd line, one email sent '
+                 'by each cmd')
+    parser_infile = subparser.add_parser('infile',
+            help='all parameters are stored in files, support batch mode')
     # subcommand: inline
     parser_inline.add_argument('--subject', required=True,
             help='subject for this email')
@@ -92,7 +126,6 @@ def main():
     parser_inline.add_argument('--smtp', required=True,
             help='SMTP server of sender email account')
     parser_inline.add_argument('--port', type=int, default=587,
-            choices=[25,465,587],
             help='choose the port for SMTP server, default=587')
     parser_inline.add_argument('--timeout', type=int, default=3,
             help='connection timeout, default=3s')
@@ -112,17 +145,12 @@ def main():
                 sys.exit(1)
         else:
             setattr(args, 'content', ''.join(sys.stdin.readlines()))
-        # content tail
-        if args.contype == 'plain':
-            args.content += \
-              '\n\n\n\n--------\n'\
-              'sent by maily --> https://github.com/xinlin-z/maily'
         # check attachment list
         for item in args.attachment:
             if os.path.isfile(item) is False:
                 print('Attachement %s is not a file.' % item)
                 sys.exit(1)
-        # check address list to, cc, bcc
+        # check addresses in to, cc, bcc and fromaddr
         for addr in args.to:
             if check_addr(addr) is False:
                 print('%s: address format error in --to list.' % addr)
@@ -135,6 +163,9 @@ def main():
             if check_addr(addr) is False:
                 print('%s: address format error in -bcc list.' % addr)
                 sys.exit(1)
+        if check_addr(args.fromaddr) is False:
+            print('%s: address format error in --fromaddr.' % args.fromaddr)
+            sys.exit(1)
         # go
         maily(args.subject, args.content, args.attachment,
               args.to, args.cc, args.bcc, args.fromaddr, args.passwd,
