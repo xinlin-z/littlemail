@@ -24,7 +24,7 @@ Maily will send a single email out in inline mode for each command.
     You can also specify -a for attachments.
     The default --contype is plain.
     --cc and --bcc are for other receivers.
-    The default --port is 587, you can set it to 25 or 465, or any int.
+    The default --port is 587, you can also set it to 25 or 465.
 
     One more thing, there three ways to fill the email's content:
     (a), fill --content options in cmd-line;

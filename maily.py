@@ -85,7 +85,7 @@ def main():
         You can also specify -a for attachments.
         The default --contype is plain.
         --cc and --bcc are for other receivers.
-        The default --port is 587, you can set it to 25 or 465, or any int.
+        The default --port is 587, you can also set it to 25 or 465.
 
         One more thing, there three ways to fill the email's content:
         (a), fill --content options in cmd line;
@@ -128,6 +128,7 @@ def main():
     parser_inline.add_argument('--smtp', required=True,
             help='SMTP server of sender email account')
     parser_inline.add_argument('--port', type=int, default=587,
+            choices=[25,465,587],
             help='choose the port for SMTP server, default=587')
     parser_inline.add_argument('--timeout', type=int, default=3,
             help='connection timeout, default=3s')
