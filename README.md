@@ -7,6 +7,7 @@ SMTP email sending tool in pure Python. It's also my practice project.
 I would get rid of complicated tools such as mail, mailx in Linux
 unconsciously. So, please don't blame me.
 
+**中文参考：https://www.pynote.net/archives/2308**
 
 ## How to Use
 There are enough info in help.
@@ -24,7 +25,8 @@ Maily will send a single email out in inline mode for each command.
     You can also specify -a for attachments.
     The default --contype is plain.
     --cc and --bcc are for other receivers.
-    The default --port is 587, you can also set it to 25 or 465.
+    The default --port is 587, you can also set it to 25, 465 or others, with
+    --tlayer option if needed.
 
     One more thing, there three ways to fill the email's content:
     (a), fill --content options in cmd-line;
@@ -32,6 +34,10 @@ Maily will send a single email out in inline mode for each command.
     (c), $ echo your_content | python3 maily.py ...
 
 ## Version
+
+* **2020-07-24 V0.17**
+    - add --tlayer option in inline sub-command to support customized port
+    - bugfix
 
 * **2020-07-22 V0.16**
     - first release with inline sub-command

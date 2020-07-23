@@ -17,7 +17,8 @@ import mimetypes
 
 def maily(subject, text, attas,
           to, cc, bcc, from_addr, passwd,
-          smtp, port, timeout, debuginfo):
+          smtp, port, tlayer, timeout, debuginfo):
+    # construct the mail
     msg = MIMEMultipart('mixed')
     msg.attach(MIMEText(text, 'plain', 'utf-8'))
     msg['Subject'] = subject
@@ -26,6 +27,7 @@ def maily(subject, text, attas,
     msg['Cc'] = ';'.join(cc)
     to.extend(cc)
     to.extend(bcc)
+    # attachments
     for i in range(len(attas)):
         ftype, encoding = mimetypes.guess_type(attas[i])
         if (ftype is None
@@ -42,15 +44,27 @@ def maily(subject, text, attas,
         encoders.encode_base64(att)
         msg.attach(att)
     try:
-        if port == 465:
-            server = smtplib.SMTP_SSL(smtp, port, timeout)
+        # create server
+        para = {'host': smtp,
+                'port': port,
+                'timeout': timeout}
+        if port in (25, 465, 587):
+            if port == 465:
+                server = smtplib.SMTP_SSL(**para)
+            else:
+                server = smtplib.SMTP(**para)
         else:
-            server = smtplib.SMTP(smtp, port, timeout)
+            if tlayer in ('plain', 'tls'):
+                server = smtplib.SMTP(**para)
+            else:  # ssl
+                server = smtplib.SMTP_SSL(**para)
+        # debuginfo
         if debuginfo:
             if sys.version.split()[0][:3] >= '3.5':
                 server.set_debuglevel(2)
             else: server.set_debuglevel(1)
-        if port == 587: server.starttls()
+        if port == 587 or tlayer == 'tls':
+                server.starttls()
         server.login(from_addr, passwd)
         server.sendmail(from_addr, to, msg.as_string())
         server.quit()
@@ -66,8 +80,22 @@ def check_addr(addr):
     else: return False
 
 
+def pInt(string):
+    try:
+        num = int(string)
+        if num < 0:
+            raise argparse.ArgumentTypeError(
+                        'Port must be a positive integer.')
+    except argparse.ArgumentTypeError:
+        raise
+    except Exception as e:
+        raise argparse.ArgumentTypeError(repr(e))
+    else:
+        return num
+
+
 # contants
-VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.16'
+VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.17'
 
 
 def main():
@@ -85,7 +113,8 @@ def main():
         You can also specify -a for attachments.
         The default --contype is plain.
         --cc and --bcc are for other receivers.
-        The default --port is 587, you can also set it to 25 or 465.
+        The default --port is 587, you can also set it to 25, 465 or others,
+        with --tlayer option if needed.
 
         One more thing, there three ways to fill the email's content:
         (a), fill --content options in cmd line;
@@ -94,9 +123,11 @@ def main():
 
         help info for inline:
         $ python3 maily.py inline -h
-
-
-                ''')
+    '''),
+                epilog = 'maily project page: '
+                         'https://github.com/xinlin-z/maily\n'
+                         'python note blog: '
+                         'https://www.pynote.net'
     )
     parser.add_argument('-V', '--version', action='version', version=VER)
     subparser = parser.add_subparsers(dest='subcmd',
@@ -127,11 +158,14 @@ def main():
             help='password of sender email account')
     parser_inline.add_argument('--smtp', required=True,
             help='SMTP server of sender email account')
-    parser_inline.add_argument('--port', type=int, default=587,
-            choices=[25,465,587],
-            help='choose the port for SMTP server, default=587')
+    parser_inline.add_argument('--port', type=pInt, default=587,
+            help='the port for SMTP server, default=587')
+    parser_inline.add_argument('--tlayer', default='tls',
+            choices=['plain', 'ssl', 'tls'],
+            help='transportation layer protocol when port is '
+                 'not well-known, defaut=tls')
     parser_inline.add_argument('--timeout', type=int, default=3,
-            help='connection timeout, default=3s')
+            help='connection timeout of smtp server, default=3s')
     parser_inline.add_argument('--debuginfo', action='store_true',
             help='show debug info between SMTP server and maily')
     args = parser.parse_args()
@@ -169,10 +203,21 @@ def main():
         if check_addr(args.fromaddr) is False:
             print('%s: address format error in --fromaddr.' % args.fromaddr)
             sys.exit(1)
+        # transportation layer
+        if (args.port not in (25, 465, 587) and
+            args.tlayer is None):
+            print('You have to set the --tlayer option, since the customized'
+                  ' port is used.')
+            sys.exit(1)
+        if ((args.port == 25 and args.tlayer != 'plain') or
+            (args.port == 465 and args.tlayer != 'ssl') or
+            (args.port == 587 and args.tlayer != 'tls')):
+            print('You use well-known port, but the --tlayer option is wrong.')
+            sys.exit(1)
         # go
         maily(args.subject, args.content, args.attachment,
               args.to, args.cc, args.bcc, args.fromaddr, args.passwd,
-              args.smtp, args.port, args.timeout, args.debuginfo)
+              args.smtp, args.port, args.tlayer, args.timeout, args.debuginfo)
     else:  # infile
         print('under development')
 
