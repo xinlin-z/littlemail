@@ -15,12 +15,12 @@ import fcntl
 import mimetypes
 
 
-def maily(subject, text, attas,
+def maily(subject, text, contype, attas,
           to, cc, bcc, from_addr, passwd,
           smtp, port, tlayer, timeout, debuginfo):
     # construct the mail
     msg = MIMEMultipart('mixed')
-    msg.attach(MIMEText(text, 'plain', 'utf-8'))
+    msg.attach(MIMEText(text, contype, 'utf-8'))
     msg['Subject'] = subject
     msg['From'] = from_addr
     msg['To'] = ';'.join(to)
@@ -111,7 +111,7 @@ def main():
         --smtp smtp.qq.com
 
         You can also specify -a for attachments.
-        The default --contype is plain.
+        The default --contype is plain, html is supported.
         --cc and --bcc are for other receivers.
         The default --port is 587, you can also set it to 25, 465 or others,
         with --tlayer option if needed.
@@ -142,8 +142,9 @@ def main():
             help='subject for this email')
     parser_inline.add_argument('--content', default=argparse.SUPPRESS,
             help='email content')
-    parser_inline.add_argument('--contype',default='plain',choices=['plain'],
-            help='specify the content type, default is plain text')
+    parser_inline.add_argument('--contype', default='plain',
+            choices=['plain', 'html'],
+            help='specify the content type, default=plain')
     parser_inline.add_argument('-a', '--attachment', nargs='+', default=[],
             help='attachments files')
     parser_inline.add_argument('--to', required=True, nargs='+',
@@ -215,7 +216,7 @@ def main():
             print('You use well-known port, but the --tlayer option is wrong.')
             sys.exit(1)
         # go
-        maily(args.subject, args.content, args.attachment,
+        maily(args.subject, args.content, args.contype, args.attachment,
               args.to, args.cc, args.bcc, args.fromaddr, args.passwd,
               args.smtp, args.port, args.tlayer, args.timeout, args.debuginfo)
     else:  # infile

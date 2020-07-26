@@ -23,7 +23,7 @@ Maily will send a single email out in inline mode for each command.
       --smtp smtp.qq.com
 
     You can also specify -a for attachments.
-    The default --contype is plain.
+    The default --contype is plain, html is also support.
     --cc and --bcc are for other receivers.
     The default --port is 587, you can also set it to 25, 465 or others, with
     --tlayer option if needed.
