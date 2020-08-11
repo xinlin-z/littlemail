@@ -5,6 +5,8 @@ import re
 import argparse
 import textwrap
 import smtplib
+import json
+import subprocess
 from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -15,9 +17,43 @@ import fcntl
 import mimetypes
 
 
-def maily(subject, text, contype, attas,
-          to, cc, bcc, from_addr, passwd,
-          smtp, port, tlayer, timeout, debuginfo):
+server_on = False
+def _server_send(smtp, port, timeout, tlayer, debuginfo,
+                 from_addr, passwd, to, msg, hold=False):
+    global server_on
+    if not server_on:
+        # server para
+        para = {'host': smtp,
+                'port': port,
+                'timeout': timeout}
+        # create server
+        if port in (25, 465, 587):
+            if port == 465:
+                server = smtplib.SMTP_SSL(**para)
+            else:
+                server = smtplib.SMTP(**para)
+        else:
+            if tlayer in ('plain', 'tls'):
+                server = smtplib.SMTP(**para)
+            else:  # ssl
+                server = smtplib.SMTP_SSL(**para)
+        # debuginfo
+        if debuginfo:
+            if sys.version.split()[0][:3] >= '3.5':
+                server.set_debuglevel(2)
+            else: server.set_debuglevel(1)
+        if port == 587 or tlayer == 'tls':
+                server.starttls()
+        server.login(from_addr, passwd)
+        server_on = True
+    # do send
+    server.sendmail(from_addr, to, msg.as_string())
+    if not hold:
+        server.quit()
+        server_on = False
+
+
+def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
     # construct the mail
     msg = MIMEMultipart('mixed')
     msg.attach(MIMEText(text, contype, 'utf-8'))
@@ -43,34 +79,7 @@ def maily(subject, text, contype, attas,
             att.set_payload(f.read())
         encoders.encode_base64(att)
         msg.attach(att)
-    try:
-        # create server
-        para = {'host': smtp,
-                'port': port,
-                'timeout': timeout}
-        if port in (25, 465, 587):
-            if port == 465:
-                server = smtplib.SMTP_SSL(**para)
-            else:
-                server = smtplib.SMTP(**para)
-        else:
-            if tlayer in ('plain', 'tls'):
-                server = smtplib.SMTP(**para)
-            else:  # ssl
-                server = smtplib.SMTP_SSL(**para)
-        # debuginfo
-        if debuginfo:
-            if sys.version.split()[0][:3] >= '3.5':
-                server.set_debuglevel(2)
-            else: server.set_debuglevel(1)
-        if port == 587 or tlayer == 'tls':
-                server.starttls()
-        server.login(from_addr, passwd)
-        server.sendmail(from_addr, to, msg.as_string())
-        server.quit()
-    except Exception as e:
-        print(repr(e))
-        sys.exit(1)
+    return msg,to
 
 
 def check_addr(addr):
@@ -95,7 +104,7 @@ def pInt(string):
 
 
 # contants
-VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.17'
+VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.18'
 
 
 def main():
@@ -133,10 +142,10 @@ def main():
     subparser = parser.add_subparsers(dest='subcmd',
                                       title='sub commands')
     parser_inline = subparser.add_parser('inline',
-            help='all parameters are specified in cmd line, one email sent '
+            help='parameters are specified in cmd line, one email sent '
                  'by each cmd')
     parser_infile = subparser.add_parser('infile',
-            help='all parameters are stored in files, support batch mode')
+            help='parameters are stored in json files, support batch mode')
     # subcommand: inline
     parser_inline.add_argument('--subject', required=True,
             help='subject for this email')
@@ -169,6 +178,10 @@ def main():
             help='connection timeout of smtp server, default=3s')
     parser_inline.add_argument('--debuginfo', action='store_true',
             help='show debug info between SMTP server and maily')
+    # subcommand: infile
+    parser_infile.add_argument('msgfile',
+            help='msg file in json format')
+    #
     args = parser.parse_args()
     if args.subcmd == 'inline':
         # check subject
@@ -216,11 +229,44 @@ def main():
             print('You use well-known port, but the --tlayer option is wrong.')
             sys.exit(1)
         # go
-        maily(args.subject, args.content, args.contype, args.attachment,
-              args.to, args.cc, args.bcc, args.fromaddr, args.passwd,
-              args.smtp, args.port, args.tlayer, args.timeout, args.debuginfo)
+        msg, to = _get_msg_to(args.subject,
+                              args.content,
+                              args.contype,
+                              args.attachment,
+                              args.to,
+                              args.cc,
+                              args.bcc,
+                              args.fromaddr)
+        try:
+            _server_send(args.smtp,
+                         args.port,
+                         args.timeout,
+                         args.tlayer,
+                         args.debuginfo,
+                         args.fromaddr,
+                         args.passwd,
+                         to,
+                         msg)
+        except Exception as e:
+            print(repr(e))
+            sys.exit(1)
     else:  # infile
-        print('under development')
+        # check json file, show and coount
+        try:
+            with open(args.msgfile) as f:
+                emd = json.load(f)
+            enum = 0
+            for i in range(len(emd)):
+                enum += len(emd[i]['msg'])
+            cmd = 'python3 -m json.tool %s' % args.msgfile
+            proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
+            print(proc.stdout.decode())
+            print('There are total %d emails need to be sent by %d accounts.'
+                   % (enum, len(emd)))
+        except Exception as e:
+            print(repr(e))
+            print('Most likely the json file input is in wrong format.')
+            sys.exit(1)
 
 
 if __name__ == '__main__':
