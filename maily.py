@@ -194,6 +194,7 @@ def main():
             if len(sys.stdin.readlines()) != 0:
                 print('content conflict from both cmd argument and stdin.')
                 sys.exit(1)
+            args.content = args.content.replace('\\n','\n')
         else:
             setattr(args, 'content', ''.join(sys.stdin.readlines()))
         # check attachment list
