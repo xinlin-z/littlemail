@@ -33,7 +33,21 @@ Maily will send a single email out in inline mode for each command.
     (b), $ python3 maily.py ..... < content.txt
     (c), $ echo your_content | python3 maily.py ...
 
+### sub-command: infile
+
+    $ python3 maily.py infile msg.json
+
+    All of the parameters needed are in a single json file. msg.json is
+    an example for you. Some items in json are optional.
+    So, if you put more than one msg under one account, or you set more
+    than one account, you will get batch mode. The SMTP server will hold
+    automatically until the last msg for each account.
+
 ## Version
+
+* **2020-08-21 V0.18**
+    - add infile sub-command
+    - refactor and bugfix
 
 * **2020-07-24 V0.17**
     - add --tlayer option in inline sub-command to support customized port

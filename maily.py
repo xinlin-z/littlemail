@@ -2,11 +2,11 @@
 import os
 import sys
 import re
+import time
 import argparse
 import textwrap
 import smtplib
 import json
-import subprocess
 from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -17,10 +17,11 @@ import fcntl
 import mimetypes
 
 
+server = None
 server_on = False
 def _server_send(smtp, port, timeout, tlayer, debuginfo,
                  from_addr, passwd, to, msg, hold=False):
-    global server_on
+    global server,server_on
     if not server_on:
         # server para
         para = {'host': smtp,
@@ -132,6 +133,15 @@ def main():
 
         help info for inline:
         $ python3 maily.py inline -h
+
+    2), infile
+        $ python3 maily.py infile msg.json
+
+        All of the parameters needed are in a single json file. msg.json is
+        an example for you. Some items in json are optional.
+        So, if you put more than one msg under one account, or you set more
+        than one account, you will get batch mode. The SMTP server will hold
+        automatically until the last msg for each account.
     '''),
                 epilog = 'maily project page: '
                          'https://github.com/xinlin-z/maily\n'
@@ -186,49 +196,47 @@ def main():
     if args.subcmd == 'inline':
         # check subject
         if args.subject.strip() == '':
-            print('Subject can not be empty.')
-            sys.exit(1)
+            raise ValueError('subject option can not be empty.')
         # check content
         if hasattr(args, 'content'):  # argument --content is present
             # stdin must be empyt
             if len(sys.stdin.readlines()) != 0:
-                print('content conflict from both cmd argument and stdin.')
-                sys.exit(1)
+                raise ValueError('content conflict from both cmd argument '
+                                 'and stdin.')
+            # make \n to work, input is raw string
             args.content = args.content.replace('\\n','\n')
         else:
             setattr(args, 'content', ''.join(sys.stdin.readlines()))
         # check attachment list
         for item in args.attachment:
             if os.path.isfile(item) is False:
-                print('Attachement %s is not a file.' % item)
-                sys.exit(1)
+                raise ValueError('Attachement %s is not a file.' % item)
         # check addresses in to, cc, bcc and fromaddr
         for addr in args.to:
             if check_addr(addr) is False:
-                print('%s: address format error in --to list.' % addr)
-                sys.exit(1)
+                raise ValueError('%s: address format error in --to list.'
+                                  % addr)
         for addr in args.cc:
             if check_addr(addr) is False:
-                print('%s: address format error in --cc list.' % addr)
-                sys.exit(1)
+                raise ValueError('%s: address format error in --cc list.'
+                                  % addr)
         for addr in args.bcc:
             if check_addr(addr) is False:
-                print('%s: address format error in -bcc list.' % addr)
-                sys.exit(1)
+                raise ValueError('%s: address format error in -bcc list.'
+                                  % addr)
         if check_addr(args.fromaddr) is False:
-            print('%s: address format error in --fromaddr.' % args.fromaddr)
-            sys.exit(1)
+            raise ValueError('%s: address format error in --fromaddr.'
+                              % args.fromaddr)
         # transportation layer
         if (args.port not in (25, 465, 587) and
             args.tlayer is None):
-            print('You have to set the --tlayer option, since the customized'
-                  ' port is used.')
-            sys.exit(1)
+            raise ValueError('You have to set the --tlayer option, '
+                             'since the customized port is used.')
         if ((args.port == 25 and args.tlayer != 'plain') or
             (args.port == 465 and args.tlayer != 'ssl') or
             (args.port == 587 and args.tlayer != 'tls')):
-            print('You use well-known port, but the --tlayer option is wrong.')
-            sys.exit(1)
+            raise ValueError('You use the well-known port, but the '
+                             'corresponding --tlayer option is wrong.')
         # go
         msg, to = _get_msg_to(args.subject,
                               args.content,
@@ -238,40 +246,129 @@ def main():
                               args.cc,
                               args.bcc,
                               args.fromaddr)
-        try:
-            _server_send(args.smtp,
-                         args.port,
-                         args.timeout,
-                         args.tlayer,
-                         args.debuginfo,
-                         args.fromaddr,
-                         args.passwd,
-                         to,
-                         msg)
-        except Exception as e:
-            print(repr(e))
-            sys.exit(1)
+        _server_send(args.smtp,
+                     args.port,
+                     args.timeout,
+                     args.tlayer,
+                     args.debuginfo,
+                     args.fromaddr,
+                     args.passwd,
+                     to,
+                     msg)
     else:  # infile
-        # check json file, show and coount
-        try:
-            with open(args.msgfile) as f:
-                emd = json.load(f)
-            enum = 0
-            for i in range(len(emd)):
-                enum += len(emd[i]['msg'])
-            cmd = 'python3 -m json.tool %s' % args.msgfile
-            proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE)
-            print(proc.stdout.decode())
-            print('There are total %d emails need to be sent by %d accounts.'
-                   % (enum, len(emd)))
-        except Exception as e:
-            print(repr(e))
-            print('Most likely the json file input is in wrong format.')
-            sys.exit(1)
+        # check json file, show and count
+        with open(args.msgfile) as f:
+            emd = json.load(f)
+        enum = 0
+        for i in range(len(emd)):
+            enum += len(emd[i]['msg'])
+        print(json.dumps(emd, indent=4))
+        print('There are total [%d] emails need to be sent by [%d] accounts.'
+               % (enum, len(emd)))
+        # check contents of msg json file, set emd object
+        for i in range(len(emd)):
+            if "fromaddr" not in emd[i]:
+                raise ValueError('fromaddr is not found in [%d] account.'
+                                  %(i+1,))
+            else:
+                if check_addr(emd[i]['fromaddr']) is False:
+                    raise ValueError('%s: address format error in fromaddr.'
+                                      % emd[i]['fromaddr'])
+            if "passwd" not in emd[i]:
+                raise ValueError('passwd is not found in [%d] account.'
+                                  %(i+1,))
+            if "server" not in emd[i]:
+                raise ValueError('server is not found in [%d] account.'
+                                  %(i+1,))
+            # the above three items are mandatory, and msg item.
+            if "port" not in emd[i]:
+                emd[i]['port'] = 587  # default
+            if "connect" not in emd[i]:
+                emd[i]['connect'] = 'tls'
+            if "timeout" not in emd[i]:
+                emd[i]['timeout'] = 3
+            if "debuginfo" not in emd[i]:
+                emd[i]['debuginfo'] = False
+            if "interval" not in emd[i]:
+                emd[i]['interval'] = 3
+            # msg
+            for j in range(len(emd[i]['msg'])):
+                if "subject" not in emd[i]['msg'][j]:
+                    raise ValueError('subject is missing in [%d] account, '
+                                     'and [%d] email msg.'% (i+1,j+1))
+                if "to" not in emd[i]['msg'][j]:
+                    raise ValueError('to addr list is missing in [%d] account, '
+                                     'and [%d] email msg.'% (i+1,j+1))
+                else:
+                    for addr in emd[i]['msg'][j]['to']:
+                        if check_addr(addr) is False:
+                            raise ValueError(
+                                '%s: address format error in to list, '
+                                'in [%d] account, [%d] email msg.'
+                                % (addr, i+1, j+1))
+                if "cc" not in emd[i]['msg'][j]:
+                    emd[i]['msg'][j]['cc'] = []
+                else:
+                    for addr in emd[i]['msg'][j]['cc']:
+                        if check_addr(addr) is False:
+                            raise ValueError(
+                                '%s: address format error in cc list, '
+                                'in [%d] account, [%d] email msg.'
+                                % (addr, i+1, j+1))
+                if "bcc" not in emd[i]['msg'][j]:
+                    emd[i]['msg'][j]['bcc'] = []
+                else:
+                    for addr in emd[i]['msg'][j]['bcc']:
+                        if check_addr(addr) is False:
+                            raise ValueError(
+                                '%s: address format error in bcc list, '
+                                'in [%d] account, [%d] email msg.'
+                                % (addr, i+1, j+1))
+                if "type" not in emd[i]['msg'][j]:
+                    emd[i]['msg'][j]['type'] = 'plain'
+                if "content" not in emd[i]['msg'][j]:
+                    emd[i]['msg'][j]['content'] = ''
+                if "attachment" not in emd[i]['msg'][j]:
+                    emd[i]['msg'][j]['attachment'] = []
+                else:
+                    for item in emd[i]['msg'][j]['attachment']:
+                        if os.path.isfile(item) is False:
+                            raise ValueError(
+                                    'Attachement %s is not a file, '
+                                    'in [%d] account, [%d] email msg.'
+                                    % (item, i+1, j+1))
+        # send
+        for i in range(len(emd)):
+            server_hold = True
+            for j in range(len(emd[i]['msg'])):
+                if j+1 == len(emd[i]['msg']):
+                    server_hold = False
+                msg, to = _get_msg_to(emd[i]['msg'][j]['subject'],
+                                      emd[i]['msg'][j]['content'],
+                                      emd[i]['msg'][j]['type'],
+                                      emd[i]['msg'][j]['attachment'],
+                                      emd[i]['msg'][j]['to'],
+                                      emd[i]['msg'][j]['cc'],
+                                      emd[i]['msg'][j]['bcc'],
+                                      emd[i]['fromaddr'])
+                _server_send(emd[i]['server'],
+                             emd[i]['port'],
+                             emd[i]['timeout'],
+                             emd[i]['connect'],
+                             emd[i]['debuginfo'],
+                             emd[i]['fromaddr'],
+                             emd[i]['passwd'],
+                             to,
+                             msg,
+                             server_hold)
+                print('sent...[%d] account [%d] email msg' % (i+1,j+1))
+                if i+1 != len(emd) and server_hold:
+                    time.sleep(emd[i]['interval'])
 
 
 if __name__ == '__main__':
     fcntl.fcntl(sys.stdin, fcntl.F_SETFL, os.O_NONBLOCK)
     main()
+
 
 

@@ -1,0 +1,47 @@
+[
+
+{
+"fromaddr": "account@qq.com",
+"passwd" : "password",
+"server" : "smtp.qq.com",
+"msg"    :
+    [
+        {
+            "subject":"send to me",
+            "to":["to@qq.com"]
+        }
+    ]
+},
+
+{
+"fromaddr": "account@163.com",
+"passwd" : "password",
+"server" : "smtp.163.com",
+"port": 587,
+"connent": "tls",
+"timeout": 3,
+"debuginfo": false,
+"interval": 3,
+"msg"    :
+    [
+        {
+            "subject":"test json email 11",
+            "to":["to1@qq.com","to2@qq.com"],
+            "cc":[],
+            "type":"plain",
+            "content":"人生hahaha...lalala..."
+        },
+        {
+            "subject":"test json file 12",
+            "to":["tototo@hotmail.com"],
+            "cc":["cc@qq.com"],
+            "bcc":[],
+            "type":"html",
+            "content":"<h1>2222...hahaha...lalala...</h1>",
+            "attachment":["/home/pi/test/hh1.c",
+                          "/home/pi/test/hh1"]
+        }
+    ]
+}
+
+]
