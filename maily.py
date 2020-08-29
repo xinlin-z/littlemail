@@ -281,24 +281,19 @@ def main():
                 raise ValueError('server is not found in [%d] account.'
                                   %(i+1,))
             # the above three items are mandatory, and msg item.
-            if "port" not in emd[i]:
-                emd[i]['port'] = 587  # default
-            if "connect" not in emd[i]:
-                emd[i]['connect'] = 'tls'
-            if "timeout" not in emd[i]:
-                emd[i]['timeout'] = 3
-            if "debuginfo" not in emd[i]:
-                emd[i]['debuginfo'] = False
-            if "interval" not in emd[i]:
-                emd[i]['interval'] = 3
+            emd[i].setdefault('port', 587)
+            emd[i].setdefault('connect', 'tls')
+            emd[i].setdefault('timeout', 3)
+            emd[i].setdefault('interval', 3)
+            emd[i].setdefault('debuginfo', False)
             # msg
             for j in range(len(emd[i]['msg'])):
                 if "subject" not in emd[i]['msg'][j]:
                     raise ValueError('subject is missing in [%d] account, '
                                      'and [%d] email msg.'% (i+1,j+1))
                 if "to" not in emd[i]['msg'][j]:
-                    raise ValueError('to addr list is missing in [%d] account, '
-                                     'and [%d] email msg.'% (i+1,j+1))
+                    raise ValueError('to addr list is missing in [%d] account,'
+                                     ' and [%d] email msg.'% (i+1,j+1))
                 else:
                     for addr in emd[i]['msg'][j]['to']:
                         if check_addr(addr) is False:
@@ -306,37 +301,29 @@ def main():
                                 '%s: address format error in to list, '
                                 'in [%d] account, [%d] email msg.'
                                 % (addr, i+1, j+1))
-                if "cc" not in emd[i]['msg'][j]:
-                    emd[i]['msg'][j]['cc'] = []
-                else:
-                    for addr in emd[i]['msg'][j]['cc']:
-                        if check_addr(addr) is False:
-                            raise ValueError(
-                                '%s: address format error in cc list, '
+                emd[i]['msg'][j].setdefault('cc', [])
+                for addr in emd[i]['msg'][j]['cc']:
+                    if check_addr(addr) is False:
+                        raise ValueError(
+                            '%s: address format error in cc list, '
+                            'in [%d] account, [%d] email msg.'
+                            % (addr, i+1, j+1))
+                emd[i]['msg'][j].setdefault('bcc', [])
+                for addr in emd[i]['msg'][j]['bcc']:
+                    if check_addr(addr) is False:
+                        raise ValueError(
+                            '%s: address format error in bcc list, '
+                            'in [%d] account, [%d] email msg.'
+                            % (addr, i+1, j+1))
+                emd[i]['msg'][j].setdefault('type', 'plain')
+                emd[i]['msg'][j].setdefault('content', '')
+                emd[i]['msg'][j].setdefault('attachment', [])
+                for item in emd[i]['msg'][j]['attachment']:
+                    if os.path.isfile(item) is False:
+                        raise ValueError(
+                                'Attachement %s is not a file, '
                                 'in [%d] account, [%d] email msg.'
-                                % (addr, i+1, j+1))
-                if "bcc" not in emd[i]['msg'][j]:
-                    emd[i]['msg'][j]['bcc'] = []
-                else:
-                    for addr in emd[i]['msg'][j]['bcc']:
-                        if check_addr(addr) is False:
-                            raise ValueError(
-                                '%s: address format error in bcc list, '
-                                'in [%d] account, [%d] email msg.'
-                                % (addr, i+1, j+1))
-                if "type" not in emd[i]['msg'][j]:
-                    emd[i]['msg'][j]['type'] = 'plain'
-                if "content" not in emd[i]['msg'][j]:
-                    emd[i]['msg'][j]['content'] = ''
-                if "attachment" not in emd[i]['msg'][j]:
-                    emd[i]['msg'][j]['attachment'] = []
-                else:
-                    for item in emd[i]['msg'][j]['attachment']:
-                        if os.path.isfile(item) is False:
-                            raise ValueError(
-                                    'Attachement %s is not a file, '
-                                    'in [%d] account, [%d] email msg.'
-                                    % (item, i+1, j+1))
+                                % (item, i+1, j+1))
         # send
         for i in range(len(emd)):
             server_hold = True
