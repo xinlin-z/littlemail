@@ -83,11 +83,16 @@ def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
     return msg,to
 
 
-def check_addr(addr):
-    """check addr for literal formation only
-    There has to be one @ and one . at lease, space is unacceptable."""
-    if re.match('^[^\s]+@[^.\s]+(\.[^.\s]+)+$', addr): return True
-    else: return False
+def valid_email(email):
+    """Return True of False if the email is roughly in good foramt.
+    This function only check the format of email, not it's existence.
+    """
+    e = r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+|\.[a-zA-Z0-9]+)*@'\
+         '[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+$'
+    if re.search(e, email):
+        return True
+    else:
+        return False
 
 
 def pInt(string):
@@ -213,18 +218,18 @@ def main():
                 raise ValueError('Attachement %s is not a file.' % item)
         # check addresses in to, cc, bcc and fromaddr
         for addr in args.to:
-            if check_addr(addr) is False:
+            if not valid_email(addr):
                 raise ValueError('%s: address format error in --to list.'
                                   % addr)
         for addr in args.cc:
-            if check_addr(addr) is False:
+            if not valid_email(addr):
                 raise ValueError('%s: address format error in --cc list.'
                                   % addr)
         for addr in args.bcc:
-            if check_addr(addr) is False:
+            if not valid_email(addr):
                 raise ValueError('%s: address format error in -bcc list.'
                                   % addr)
-        if check_addr(args.fromaddr) is False:
+        if not valid_email(args.fromaddr):
             raise ValueError('%s: address format error in --fromaddr.'
                               % args.fromaddr)
         # transportation layer
@@ -271,7 +276,7 @@ def main():
                 raise ValueError('fromaddr is not found in [%d] account.'
                                   %(i+1,))
             else:
-                if check_addr(emd[i]['fromaddr']) is False:
+                if not valid_email(emd[i]['fromaddr']):
                     raise ValueError('%s: address format error in fromaddr.'
                                       % emd[i]['fromaddr'])
             if "passwd" not in emd[i]:
@@ -296,21 +301,21 @@ def main():
                                      ' and [%d] email msg.'% (i+1,j+1))
                 else:
                     for addr in emd[i]['msg'][j]['to']:
-                        if check_addr(addr) is False:
+                        if not valid_email(addr):
                             raise ValueError(
                                 '%s: address format error in to list, '
                                 'in [%d] account, [%d] email msg.'
                                 % (addr, i+1, j+1))
                 emd[i]['msg'][j].setdefault('cc', [])
                 for addr in emd[i]['msg'][j]['cc']:
-                    if check_addr(addr) is False:
+                    if not valid_email(addr):
                         raise ValueError(
                             '%s: address format error in cc list, '
                             'in [%d] account, [%d] email msg.'
                             % (addr, i+1, j+1))
                 emd[i]['msg'][j].setdefault('bcc', [])
                 for addr in emd[i]['msg'][j]['bcc']:
-                    if check_addr(addr) is False:
+                    if not valid_email(addr):
                         raise ValueError(
                             '%s: address format error in bcc list, '
                             'in [%d] account, [%d] email msg.'
