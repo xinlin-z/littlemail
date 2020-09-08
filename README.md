@@ -45,6 +45,9 @@ Maily will send a single email out in inline mode for each command.
 
 ## Version
 
+* **2020-09-08 V0.19**
+    - bugfix version
+
 * **2020-08-21 V0.18**
     - add infile sub-command
     - refactor and bugfix
