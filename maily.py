@@ -217,18 +217,22 @@ def main():
             if os.path.isfile(item) is False:
                 raise ValueError('Attachement %s is not a file.' % item)
         # check addresses in to, cc, bcc and fromaddr
+        args.to = [x.strip() for x in args.to]
         for addr in args.to:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in --to list.'
                                   % addr)
+        args.cc = [x.strip() for x in args.cc]
         for addr in args.cc:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in --cc list.'
                                   % addr)
+        args.bcc = [x.strip() for x in args.bcc]
         for addr in args.bcc:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in -bcc list.'
                                   % addr)
+        args.fromaddr = args.fromaddr.strip()
         if not valid_email(args.fromaddr):
             raise ValueError('%s: address format error in --fromaddr.'
                               % args.fromaddr)
@@ -276,6 +280,7 @@ def main():
                 raise ValueError('fromaddr is not found in [%d] account.'
                                   %(i+1,))
             else:
+                emd[i]['fromaddr'] = emd[i]['fromaddr'].strip()
                 if not valid_email(emd[i]['fromaddr']):
                     raise ValueError('%s: address format error in fromaddr.'
                                       % emd[i]['fromaddr'])
@@ -300,6 +305,8 @@ def main():
                     raise ValueError('to addr list is missing in [%d] account,'
                                      ' and [%d] email msg.'% (i+1,j+1))
                 else:
+                    emd[i]['msg'][j]['to'] = [x.strip()
+                                              for x in emd[i]['msg'][j]['to']]
                     for addr in emd[i]['msg'][j]['to']:
                         if not valid_email(addr):
                             raise ValueError(
@@ -307,6 +314,8 @@ def main():
                                 'in [%d] account, [%d] email msg.'
                                 % (addr, i+1, j+1))
                 emd[i]['msg'][j].setdefault('cc', [])
+                emd[i]['msg'][j]['cc'] = [x.strip()
+                                          for x in emd[i]['msg'][j]['cc']]
                 for addr in emd[i]['msg'][j]['cc']:
                     if not valid_email(addr):
                         raise ValueError(
@@ -314,6 +323,8 @@ def main():
                             'in [%d] account, [%d] email msg.'
                             % (addr, i+1, j+1))
                 emd[i]['msg'][j].setdefault('bcc', [])
+                emd[i]['msg'][j]['bcc'] = [x.strip()
+                                           for x in emd[i]['msg'][j]['bcc']]
                 for addr in emd[i]['msg'][j]['bcc']:
                     if not valid_email(addr):
                         raise ValueError(
