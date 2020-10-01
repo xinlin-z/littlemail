@@ -95,6 +95,19 @@ def valid_email(email):
         return False
 
 
+def chDictKey(odict, keycase='lower'):
+    """Return a new dict object with recursively changed keys in keycase.
+    keycase: lower(default), upper.
+    """
+    if not isinstance(odict, dict):
+        return odict
+    ndict = dict()
+    for k,v in odict.items():
+        _k = eval('k.'+keycase+'()')
+        ndict[_k] = chDictKey(v, keycase)
+    return ndict
+
+
 def pInt(string):
     try:
         num = int(string)
@@ -276,6 +289,7 @@ def main():
                % (enum, len(emd)))
         # check contents of msg json file, set emd object
         for i in range(len(emd)):
+            emd[i] = chDictKey(emd[i])
             if "fromaddr" not in emd[i]:
                 raise ValueError('fromaddr is not found in [%d] account.'
                                   %(i+1,))
@@ -298,6 +312,7 @@ def main():
             emd[i].setdefault('debuginfo', False)
             # msg
             for j in range(len(emd[i]['msg'])):
+                emd[i]['msg'][j] = chDictKey(emd[i]['msg'][j])
                 if "subject" not in emd[i]['msg'][j]:
                     raise ValueError('subject is missing in [%d] account, '
                                      'and [%d] email msg.'% (i+1,j+1))
@@ -364,7 +379,7 @@ def main():
                              to,
                              msg,
                              server_hold)
-                print('sent...[%d] account [%d] email msg' % (i+1,j+1))
+                print('sent...[%d] account [%d] email' % (i+1,j+1))
                 if i+1 != len(emd) and server_hold:
                     time.sleep(emd[i]['interval'])
 
