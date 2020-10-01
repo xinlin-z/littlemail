@@ -347,7 +347,7 @@ def main():
                             'in [%d] account, [%d] email msg.'
                             % (addr, i+1, j+1))
                 emd[i]['msg'][j].setdefault('type', 'plain')
-                emd[i]['msg'][j].setdefault('content', '')
+                emd[i]['msg'][j].setdefault('content', [])
                 emd[i]['msg'][j].setdefault('attachment', [])
                 for item in emd[i]['msg'][j]['attachment']:
                     if os.path.isfile(item) is False:
@@ -362,7 +362,7 @@ def main():
                 if j+1 == len(emd[i]['msg']):
                     server_hold = False
                 msg, to = _get_msg_to(emd[i]['msg'][j]['subject'],
-                                      emd[i]['msg'][j]['content'],
+                                      ''.join(emd[i]['msg'][j]['content']),
                                       emd[i]['msg'][j]['type'],
                                       emd[i]['msg'][j]['attachment'],
                                       emd[i]['msg'][j]['to'],

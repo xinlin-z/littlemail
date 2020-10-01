@@ -29,7 +29,9 @@
             "to":["to1@qq.com","to2@qq.com"],
             "cc":[],
             "type":"plain",
-            "content":"人生hahaha...lalala..."
+            "content":["人生hahaha...lalala...\n",
+                       "This is second line,\n",
+                       "third line..."]
         },
         {
             "subject":"test json file 12",
@@ -37,7 +39,7 @@
             "cc":["cc@qq.com"],
             "bcc":[],
             "type":"html",
-            "content":"<h1>2222...hahaha...lalala...</h1>",
+            "content":["<h1>2222...hahaha...lalala...</h1>"],
             "attachment":["/home/pi/test/hh1.c",
                           "/home/pi/test/hh1"]
         }
