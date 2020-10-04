@@ -103,7 +103,7 @@ def chDictKey(odict, keycase='lower'):
         return odict
     ndict = dict()
     for k,v in odict.items():
-        _k = eval('k.'+keycase+'()')
+        _k = eval('k.'+keycase+'().strip()')
         ndict[_k] = chDictKey(v, keycase)
     return ndict
 
