@@ -22,26 +22,36 @@ Maily will send a single email out in inline mode for each command.
       --to to@qq.com --fromaddr from@qq.com --passwd your_password
       --smtp smtp.qq.com
 
-    You can also specify -a for attachments.
-    The default --contype is plain, html is also support.
-    --cc and --bcc are for other receivers.
-    The default --port is 587, you can also set it to 25, 465 or others, with
-    --tlayer option if needed.
+You can also specify -a for one or more attachments.
+The default --contype is plain, html is supported and you are
+responsible to feed html string for --content.
+--cc and --bcc are for other receivers, optional.
+The default --port is 587, you can also set it to 25, 465 or others,
+with --tlayer option if needed.
 
-    One more thing, there three ways to fill the email's content:
-    (a), fill --content options in cmd-line;
-    (b), $ python3 maily.py ..... < content.txt
-    (c), $ echo your_content | python3 maily.py ...
+One more thing, there are two ways to fill the email's content:
+
+(a), fill --content in cmd line;
+
+(b), use pipe:
+
+    $ python3 maily.py ..... < content.txt
+    $ echo your_content | python3 maily.py ...
+
+help info for inline:
+
+    $ python3 maily.py inline -h
 
 ### sub-command: infile
 
     $ python3 maily.py infile msg.json
 
-    All of the parameters needed are in a single json file. msg.json is
-    an example for you. Some items in json are optional.
-    So, if you put more than one msg under one account, or you set more
-    than one account, you will get batch mode. The SMTP server will hold
-    automatically until the last msg for each account.
+All of the parameters needed are in a single JSON file.
+File msg.json in this repo is an example for you.
+If you put more than one email in one account, or you gather more
+than one account in your json file, you get Batch Mode. In these
+cases, the SMTP server will be hold automatically until the last email
+sended for each account.
 
 ## Version
 
