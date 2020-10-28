@@ -55,6 +55,10 @@ sended for each account.
 
 ## Version
 
+* **2020-10-28 V0.21**
+    - even more checks for infile
+    - change type to contype for infile
+
 * **2020-10-09 V0.20**
     - more check done to json file for infile subcommand
     - change content to an array of string for infile subcommand
