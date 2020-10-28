@@ -18,7 +18,7 @@
 "passwd" : "password",
 "server" : "smtp.163.com",
 "port": 587,
-"connent": "tls",
+"connect": "tls",
 "timeout": 3,
 "debuginfo": false,
 "interval": 3,
@@ -28,7 +28,7 @@
             "subject":"test json email 11",
             "to":["to1@qq.com","to2@qq.com"],
             "cc":[],
-            "type":"plain",
+            "contype":"plain",
             "content":["人生hahaha...lalala...\n",
                        "This is second line,\n",
                        "third line..."]
@@ -38,7 +38,7 @@
             "to":["tototo@hotmail.com"],
             "cc":["cc@qq.com"],
             "bcc":[],
-            "type":"html",
+            "contype":"html",
             "content":["<h1>2222...hahaha...lalala...</h1>"],
             "attachment":["/home/pi/test/hh1.c",
                           "/home/pi/test/hh1"]
