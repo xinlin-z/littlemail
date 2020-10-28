@@ -113,7 +113,7 @@ def pInt(string):
         num = int(string)
         if num < 0:
             raise argparse.ArgumentTypeError(
-                        'Port must be a positive integer.')
+                        'port must be a positive integer.')
     except argparse.ArgumentTypeError:
         raise
     except Exception as e:
@@ -123,7 +123,7 @@ def pInt(string):
 
 
 # contants
-VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.18'
+VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.21'
 
 
 def main():
@@ -138,34 +138,38 @@ def main():
         --to to@qq.com --fromaddr from@qq.com --passwd your_password
         --smtp smtp.qq.com
 
-        You can also specify -a for attachments.
-        The default --contype is plain, html is supported.
-        --cc and --bcc are for other receivers.
+        You can also specify -a for one or more attachments.
+        The default --contype is plain, html is supported and you are
+        responsible to feed html string for --content.
+        --cc and --bcc are for other receivers, optional.
         The default --port is 587, you can also set it to 25, 465 or others,
         with --tlayer option if needed.
 
-        One more thing, there three ways to fill the email's content:
-        (a), fill --content options in cmd line;
-        (b), $ python3 maily.py ..... < content.txt
-        (c), $ echo your_content | python3 maily.py ...
+        One more thing, there are two ways to fill the email's content:
+        (a), fill --content in cmd line;
+        (b), use pipe:
+            $ python3 maily.py ..... < content.txt
+            $ echo your_content | python3 maily.py ...
 
         help info for inline:
         $ python3 maily.py inline -h
 
     2), infile
-        $ python3 maily.py infile msg.json
+        $ python3 maily.py infile msg_file_in_json
 
-        All of the parameters needed are in a single json file. msg.json is
-        an example for you. Some items in json are optional.
-        So, if you put more than one msg under one account, or you set more
-        than one account, you will get batch mode. The SMTP server will hold
-        automatically until the last msg for each account.
+        All of the parameters needed are in a single JSON file.
+        File msg.json in this repo is an example for you.
+        If you put more than one email in one account, or you gather more
+        than one account in your json file, you get Batch Mode. In these
+        cases, the SMTP server will be hold automatically until the last email
+        sended for each account.
     '''),
                 epilog = 'maily project page: '
                          'https://github.com/xinlin-z/maily\n'
                          'python note blog: '
                          'https://www.pynote.net'
     )
+
     parser.add_argument('-V', '--version', action='version', version=VER)
     subparser = parser.add_subparsers(dest='subcmd',
                                       title='sub commands')
@@ -174,6 +178,7 @@ def main():
                  'by each cmd')
     parser_infile = subparser.add_parser('infile',
             help='parameters are stored in json files, support batch mode')
+
     # subcommand: inline
     parser_inline.add_argument('--subject', required=True,
             help='subject for this email')
@@ -206,9 +211,11 @@ def main():
             help='connection timeout of smtp server, default=3s')
     parser_inline.add_argument('--debuginfo', action='store_true',
             help='show debug info between SMTP server and maily')
+
     # subcommand: infile
     parser_infile.add_argument('msgfile',
             help='msg file in json format')
+
     #
     args = parser.parse_args()
     if args.subcmd == 'inline':
@@ -277,6 +284,7 @@ def main():
                      args.passwd,
                      to,
                      msg)
+
     else:  # infile
         # check json file, show and count
         with open(args.msgfile) as f:
@@ -290,7 +298,11 @@ def main():
         # check contents of msg json file, set emd object
         for i in range(len(emd)):
             emd[i] = chDictKey(emd[i])
-            if "fromaddr" not in emd[i]:
+            it = set(emd[i]) - {'fromaddr','passwd','server','port','msg',
+                                 'connect','timeout','interval','debuginfo'}
+            if len(it) != 0:
+                raise ValueError('key error: ' + str(it))
+            if 'fromaddr' not in emd[i]:
                 raise ValueError('fromaddr is not found in [%d] account.'
                                   %(i+1,))
             else:
@@ -298,10 +310,10 @@ def main():
                 if not valid_email(emd[i]['fromaddr']):
                     raise ValueError('%s: address format error in fromaddr.'
                                       % emd[i]['fromaddr'])
-            if "passwd" not in emd[i]:
+            if 'passwd' not in emd[i]:
                 raise ValueError('passwd is not found in [%d] account.'
                                   %(i+1,))
-            if "server" not in emd[i]:
+            if 'server' not in emd[i]:
                 raise ValueError('server is not found in [%d] account.'
                                   %(i+1,))
             # the above three items are mandatory, and msg item.
@@ -313,10 +325,14 @@ def main():
             # msg
             for j in range(len(emd[i]['msg'])):
                 emd[i]['msg'][j] = chDictKey(emd[i]['msg'][j])
-                if "subject" not in emd[i]['msg'][j]:
+                it = set(emd[i]['msg'][j])-{'subject','to','cc','bcc',
+                                            'contype','content','attachment'}
+                if len(it) != 0:
+                    raise ValueError('key error: ' + str(it))
+                if 'subject' not in emd[i]['msg'][j]:
                     raise ValueError('subject is missing in [%d] account, '
                                      'and [%d] email msg.'% (i+1,j+1))
-                if "to" not in emd[i]['msg'][j]:
+                if 'to' not in emd[i]['msg'][j]:
                     raise ValueError('to addr list is missing in [%d] account,'
                                      ' and [%d] email msg.'% (i+1,j+1))
                 else:
@@ -346,7 +362,7 @@ def main():
                             '%s: address format error in bcc list, '
                             'in [%d] account, [%d] email msg.'
                             % (addr, i+1, j+1))
-                emd[i]['msg'][j].setdefault('type', 'plain')
+                emd[i]['msg'][j].setdefault('contype', 'plain')
                 emd[i]['msg'][j].setdefault('content', [])
                 emd[i]['msg'][j].setdefault('attachment', [])
                 for item in emd[i]['msg'][j]['attachment']:
@@ -358,12 +374,13 @@ def main():
         # send
         for i in range(len(emd)):
             server_hold = True
-            for j in range(len(emd[i]['msg'])):
-                if j+1 == len(emd[i]['msg']):
+            msg_num = len(emd[i]['msg'])
+            for j in range(msg_num):
+                if j+1 == msg_num:
                     server_hold = False
                 msg, to = _get_msg_to(emd[i]['msg'][j]['subject'],
                                       ''.join(emd[i]['msg'][j]['content']),
-                                      emd[i]['msg'][j]['type'],
+                                      emd[i]['msg'][j]['contype'],
                                       emd[i]['msg'][j]['attachment'],
                                       emd[i]['msg'][j]['to'],
                                       emd[i]['msg'][j]['cc'],
@@ -380,7 +397,7 @@ def main():
                              msg,
                              server_hold)
                 print('sent...[%d] account [%d] email' % (i+1,j+1))
-                if i+1 != len(emd) and server_hold:
+                if server_hold:
                     time.sleep(emd[i]['interval'])
 
 
