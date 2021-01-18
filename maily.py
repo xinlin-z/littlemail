@@ -7,11 +7,9 @@ import argparse
 import textwrap
 import smtplib
 import json
-from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
-from email.utils import parseaddr, formataddr
 from email import encoders
 import fcntl
 import mimetypes
@@ -19,6 +17,8 @@ import mimetypes
 
 server = None
 server_on = False
+
+
 def _server_send(smtp, port, timeout, tlayer, debuginfo,
                  from_addr, passwd, to, msg, hold=False):
     global server,server_on
@@ -44,7 +44,7 @@ def _server_send(smtp, port, timeout, tlayer, debuginfo,
                 server.set_debuglevel(2)
             else: server.set_debuglevel(1)
         if port == 587 or tlayer == 'tls':
-                server.starttls()
+            server.starttls()
         server.login(from_addr, passwd)
         server_on = True
     # do send
@@ -68,12 +68,12 @@ def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
     for i in range(len(attas)):
         ftype, encoding = mimetypes.guess_type(attas[i])
         if (ftype is None
-              or encoding is not None):
+                or encoding is not None):
             ftype = 'application/octet-stream'
         maintype, subtype = ftype.split('/')
         att = MIMEBase(maintype, subtype)
         att.add_header('Content-Disposition','attachement',
-                       filename = os.path.basename(attas[i]))
+                       filename=os.path.basename(attas[i]))
         att.add_header('Content-ID', '<%d>'%i)
         att.add_header('X-Attachment-Id', '<%d>'%i)
         with open(attas[i], 'rb') as f:
@@ -87,8 +87,8 @@ def valid_email(email):
     """Return True of False if the email is roughly in good foramt.
     This function only check the format of email, not it's existence.
     """
-    e = r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+|\.[a-zA-Z0-9]+)*@'\
-         '[a-zA-Z0-9]+(\.[a-zA-Z0-9]+)+$'
+    e = (r'^[a-zA-Z0-9]+(_[a-zA-Z0-9]+|[.][a-zA-Z0-9]+)*@'
+         '[a-zA-Z0-9]+([.][a-zA-Z0-9]+)+$')
     if re.search(e, email):
         return True
     else:
@@ -113,7 +113,7 @@ def pInt(string):
         num = int(string)
         if num < 0:
             raise argparse.ArgumentTypeError(
-                        'port must be a positive integer.')
+                'port must be a positive integer.')
     except argparse.ArgumentTypeError:
         raise
     except Exception as e:
@@ -128,8 +128,8 @@ VER = 'maily: a cmd-line SMTP email sending tool in Python, V0.21'
 
 def main():
     parser = argparse.ArgumentParser(
-                formatter_class = argparse.RawDescriptionHelpFormatter,
-                description = VER + textwrap.dedent('''
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=VER + textwrap.dedent('''
 
     Usage Examples:
 
@@ -164,57 +164,71 @@ def main():
         cases, the SMTP server will be hold automatically until the last email
         sended for each account.
     '''),
-                epilog = 'maily project page: '
-                         'https://github.com/xinlin-z/maily\n'
-                         'python note blog: '
-                         'https://www.pynote.net'
+        epilog=('maily project page: '
+                'https://github.com/xinlin-z/maily\n'
+                'python note blog: '
+                'https://www.pynote.net')
     )
 
     parser.add_argument('-V', '--version', action='version', version=VER)
     subparser = parser.add_subparsers(dest='subcmd',
                                       title='sub commands')
-    parser_inline = subparser.add_parser('inline',
-            help='parameters are specified in cmd line, one email sent '
-                 'by each cmd')
-    parser_infile = subparser.add_parser('infile',
-            help='parameters are stored in json files, support batch mode')
+    parser_inline = subparser.add_parser(
+        'inline',
+        help='parameters are specified in cmd line, one email sent '
+             'by each cmd')
+    parser_infile = subparser.add_parser(
+        'infile',
+        help='parameters are stored in json files, support batch mode')
 
     # subcommand: inline
-    parser_inline.add_argument('--subject', required=True,
-            help='subject for this email')
-    parser_inline.add_argument('--content', default=argparse.SUPPRESS,
-            help='email content')
-    parser_inline.add_argument('--contype', default='plain',
-            choices=['plain', 'html'],
-            help='specify the content type, default=plain')
-    parser_inline.add_argument('-a', '--attachment', nargs='+', default=[],
-            help='attachments files')
-    parser_inline.add_argument('--to', required=True, nargs='+',
-            help='addresses of receivers')
-    parser_inline.add_argument('--cc', nargs='+', default=[],
-            help='addresses of cc (carbon copy)')
-    parser_inline.add_argument('--bcc', nargs='+', default=[],
-            help='addresses of bcc (blind carbon copy)')
-    parser_inline.add_argument('--fromaddr', required=True,
-            help='address of sender')
-    parser_inline.add_argument('--passwd', required=True,
-            help='password of sender email account')
-    parser_inline.add_argument('--smtp', required=True,
-            help='SMTP server of sender email account')
-    parser_inline.add_argument('--port', type=pInt, default=587,
-            help='the port for SMTP server, default=587')
-    parser_inline.add_argument('--tlayer', default='tls',
-            choices=['plain', 'ssl', 'tls'],
-            help='transportation layer protocol when port is '
-                 'not well-known, defaut=tls')
-    parser_inline.add_argument('--timeout', type=int, default=3,
-            help='connection timeout of smtp server, default=3s')
-    parser_inline.add_argument('--debuginfo', action='store_true',
-            help='show debug info between SMTP server and maily')
+    parser_inline.add_argument(
+        '--subject', required=True,
+        help='subject for this email')
+    parser_inline.add_argument(
+        '--content', default=argparse.SUPPRESS,
+        help='email content')
+    parser_inline.add_argument(
+        '--contype', default='plain', choices=['plain', 'html'],
+        help='specify the content type, default=plain')
+    parser_inline.add_argument(
+        '-a', '--attachment', nargs='+', default=[],
+        help='attachments files')
+    parser_inline.add_argument(
+        '--to', required=True, nargs='+',
+        help='addresses of receivers')
+    parser_inline.add_argument(
+        '--cc', nargs='+', default=[],
+        help='addresses of cc (carbon copy)')
+    parser_inline.add_argument(
+        '--bcc', nargs='+', default=[],
+        help='addresses of bcc (blind carbon copy)')
+    parser_inline.add_argument(
+        '--fromaddr', required=True,
+        help='address of sender')
+    parser_inline.add_argument(
+        '--passwd', required=True,
+        help='password of sender email account')
+    parser_inline.add_argument(
+        '--smtp', required=True,
+        help='SMTP server of sender email account')
+    parser_inline.add_argument(
+        '--port', type=pInt, default=587,
+        help='the port for SMTP server, default=587')
+    parser_inline.add_argument(
+        '--tlayer', default='tls', choices=['plain', 'ssl', 'tls'],
+        help='transportation layer protocol when port is '
+             'not well-known, defaut=tls')
+    parser_inline.add_argument(
+        '--timeout', type=int, default=3,
+        help='connection timeout of smtp server, default=3s')
+    parser_inline.add_argument(
+        '--debuginfo', action='store_true',
+        help='show debug info between SMTP server and maily')
 
     # subcommand: infile
     parser_infile.add_argument('msgfile',
-            help='msg file in json format')
+                               help='msg file in json format')
 
     #
     args = parser.parse_args()
@@ -241,29 +255,29 @@ def main():
         for addr in args.to:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in --to list.'
-                                  % addr)
+                                 % addr)
         args.cc = [x.strip() for x in args.cc]
         for addr in args.cc:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in --cc list.'
-                                  % addr)
+                                 % addr)
         args.bcc = [x.strip() for x in args.bcc]
         for addr in args.bcc:
             if not valid_email(addr):
                 raise ValueError('%s: address format error in -bcc list.'
-                                  % addr)
+                                 % addr)
         args.fromaddr = args.fromaddr.strip()
         if not valid_email(args.fromaddr):
             raise ValueError('%s: address format error in --fromaddr.'
-                              % args.fromaddr)
+                             % args.fromaddr)
         # transportation layer
         if (args.port not in (25, 465, 587) and
-            args.tlayer is None):
+                args.tlayer is None):
             raise ValueError('You have to set the --tlayer option, '
                              'since the customized port is used.')
         if ((args.port == 25 and args.tlayer != 'plain') or
-            (args.port == 465 and args.tlayer != 'ssl') or
-            (args.port == 587 and args.tlayer != 'tls')):
+                (args.port == 465 and args.tlayer != 'ssl') or
+                (args.port == 587 and args.tlayer != 'tls')):
             raise ValueError('You use the well-known port, but the '
                              'corresponding --tlayer option is wrong.')
         # go
@@ -294,28 +308,28 @@ def main():
             enum += len(emd[i]['msg'])
         print(json.dumps(emd, indent=4))
         print('There are total [%d] emails need to be sent by [%d] accounts.'
-               % (enum, len(emd)))
+              % (enum, len(emd)))
         # check contents of msg json file, set emd object
         for i in range(len(emd)):
             emd[i] = chDictKey(emd[i])
             it = set(emd[i]) - {'fromaddr','passwd','server','port','msg',
-                                 'connect','timeout','interval','debuginfo'}
+                                'connect','timeout','interval','debuginfo'}
             if len(it) != 0:
                 raise ValueError('key error: ' + str(it))
             if 'fromaddr' not in emd[i]:
                 raise ValueError('fromaddr is not found in [%d] account.'
-                                  %(i+1,))
+                                 %(i+1,))
             else:
                 emd[i]['fromaddr'] = emd[i]['fromaddr'].strip()
                 if not valid_email(emd[i]['fromaddr']):
                     raise ValueError('%s: address format error in fromaddr.'
-                                      % emd[i]['fromaddr'])
+                                     % emd[i]['fromaddr'])
             if 'passwd' not in emd[i]:
                 raise ValueError('passwd is not found in [%d] account.'
-                                  %(i+1,))
+                                 %(i+1,))
             if 'server' not in emd[i]:
                 raise ValueError('server is not found in [%d] account.'
-                                  %(i+1,))
+                                 %(i+1,))
             # the above three items are mandatory, and msg item.
             emd[i].setdefault('port', 587)
             emd[i].setdefault('connect', 'tls')
@@ -368,9 +382,9 @@ def main():
                 for item in emd[i]['msg'][j]['attachment']:
                     if os.path.isfile(item) is False:
                         raise ValueError(
-                                'Attachement %s is not a file, '
-                                'in [%d] account, [%d] email msg.'
-                                % (item, i+1, j+1))
+                            'Attachement %s is not a file, '
+                            'in [%d] account, [%d] email msg.'
+                            % (item, i+1, j+1))
         # send
         for i in range(len(emd)):
             server_hold = True
