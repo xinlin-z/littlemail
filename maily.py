@@ -13,21 +13,21 @@ import mimetypes
 
 def _server_send(smtp, port, timeout, tlayer, debug,
                  fromaddr, passwd, to, msg):
-    # server para
-    para = {'host': smtp,
+    # server parameters
+    param = {'host': smtp,
             'port': port,
             'timeout': timeout}
     # create server
     if port in (25, 465, 587):
         if port == 465:
-            server = smtplib.SMTP_SSL(**para)
+            server = smtplib.SMTP_SSL(**param)
         else:
-            server = smtplib.SMTP(**para)
+            server = smtplib.SMTP(**param)
     else:
         if tlayer in ('plain', 'tls'):
-            server = smtplib.SMTP(**para)
+            server = smtplib.SMTP(**param)
         else:  # ssl
-            server = smtplib.SMTP_SSL(**para)
+            server = smtplib.SMTP_SSL(**param)
     if debug:
         if sys.version.split()[0][:3] >= '3.5':
             server.set_debuglevel(2)
@@ -68,19 +68,20 @@ def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
     return msg, to
 
 
-VER = 'V0.30 by xinlin-z (https://github.com/xinlin-z/maily)'
+_VER = 'V0.31 by xinlin-z with love (https://github.com/xinlin-z/maily)'
 
 
 def main():
+    # command line options
     parser = argparse.ArgumentParser()
-    parser.add_argument('-V', '--version', action='version', version=VER)
+    parser.add_argument('-V', '--version', action='version', version=_VER)
     parser.add_argument('-s', '--subject', required=True,
                         help='subject for this email')
     parser.add_argument('-c', '--content', default=argparse.SUPPRESS,
-                        help='email content')
+                        help='email content, empty is allowed')
     parser.add_argument('-t', '--contype', default='plain',
                         choices=['plain', 'html'],
-                        help='specify content type, default is plain')
+                        help='content type, default is plain')
     parser.add_argument('-a', '--attachment', nargs='+', default=[],
                         help='attached files')
     parser.add_argument('--to', required=True, nargs='+',
@@ -89,9 +90,9 @@ def main():
                         help='address(es) of cc (carbon copy)')
     parser.add_argument('--bcc', nargs='+', default=[],
                         help='address(es) of bcc (blind carbon copy)')
-    parser.add_argument('--fromaddr', required=True,
+    parser.add_argument('-f', '--fromaddr', required=True,
                         help='address of sender')
-    parser.add_argument('--passwd', required=True,
+    parser.add_argument('-p', '--passwd', required=True,
                         help='password of sender email account')
     parser.add_argument('--smtp', required=True,
                         help='SMTP server of sender email account')
@@ -99,30 +100,32 @@ def main():
                         help='port for SMTP server, default is 587')
     parser.add_argument('--tlayer', default='tls',
                                choices=['plain','ssl','tls'],
-                    help='transportation layer protocol, default is tls')
+                    help='transportation layer protocol, default is TLS')
     parser.add_argument('--timeout', type=int, default=3,
-                    help='connection timeout of smtp server, default is 3s')
+                    help='connection timeout for smtp server, default is 3s')
     parser.add_argument('--debug', action='store_true',
                     help='show debug info between SMTP server and maily')
-
     args = parser.parse_args()
+
     # subject
     if args.subject.strip() == '':
-        raise ValueError('--subject option can not be empty.')
+        raise ValueError('--subject(-s) option can not be empty.')
 
-    # content, user input is raw string and use \r\n for compatibility.
+    # content
+    # user input is raw string and use \r\n for compatibility.
     if not sys.stdin.isatty():
         if hasattr(args, 'content'):
-            raise ValueError('--content option conflict with stdin.')
+            raise ValueError('--content(-c) option conflicts with '
+                             'redirection. You cannot use both!')
         lines = [line[:-1]+'\r\n' for line in sys.stdin.readlines()]
         setattr(args, 'content', ''.join(lines))
     else:
         try:
-          args.content = args.content.replace('\\n','\r\n')
+            args.content = args.content.replace('\\n','\r\n')
         except AttributeError:
-          raise ValueError('--content option is mandatory if not use stdin.')
+            args.content = ''
 
-    # attachment list
+    # attachment
     for item in args.attachment:
         if os.path.isfile(item) is False:
             raise ValueError('Attachement %s is not a file.' % item)
@@ -131,7 +134,7 @@ def main():
     if (args.port not in (25, 465, 587) and
             args.tlayer is None):
         raise ValueError('You have to set the --tlayer option, '
-                         'since the customized port is used.')
+                         'since the customized port number is specified.')
     if ((args.port == 25 and args.tlayer != 'plain') or
             (args.port == 465 and args.tlayer != 'ssl') or
             (args.port == 587 and args.tlayer != 'tls')):
@@ -160,9 +163,6 @@ def main():
 
 
 if __name__ == '__main__':
-    # in case stdin is empty
-    fcntl(sys.stdin, F_SETFL, fcntl(sys.stdin,F_GETFL)|os.O_NONBLOCK)
     main()
-
 
 
