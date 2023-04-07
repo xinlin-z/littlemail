@@ -7,7 +7,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
-from fcntl import fcntl, F_SETFL, F_GETFL
 import mimetypes
 
 
@@ -15,8 +14,8 @@ def _server_send(smtp, port, timeout, tlayer, debug,
                  fromaddr, passwd, to, msg):
     # server parameters
     param = {'host': smtp,
-            'port': port,
-            'timeout': timeout}
+             'port': port,
+             'timeout': timeout}
     # create server
     if port in (25, 465, 587):
         if port == 465:
@@ -68,7 +67,8 @@ def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
     return msg, to
 
 
-_VER = 'V0.31 by xinlin-z with love (https://github.com/xinlin-z/maily)'
+_VER = 'V0.31 by xinlin-z with love'\
+       ' (https://github.com/xinlin-z/maily)'
 
 
 def main():
@@ -92,7 +92,7 @@ def main():
                         help='address(es) of bcc (blind carbon copy)')
     parser.add_argument('-f', '--fromaddr', required=True,
                         help='address of sender')
-    parser.add_argument('-p', '--passwd', required=True,
+    parser.add_argument('-p', '--password', required=True,
                         help='password of sender email account')
     parser.add_argument('--smtp', required=True,
                         help='SMTP server of sender email account')
@@ -112,17 +112,15 @@ def main():
         raise ValueError('--subject(-s) option can not be empty.')
 
     # content
-    # user input is raw string and use \r\n for compatibility.
+    # User input by -c is raw string, \n is 2 char, \\ and n.
+    # By echo -e and file redirection, we get normal string.
     if not sys.stdin.isatty():
         if hasattr(args, 'content'):
             raise ValueError('--content(-c) option conflicts with '
                              'redirection. You cannot use both!')
-        lines = [line[:-1]+'\r\n' for line in sys.stdin.readlines()]
-        setattr(args, 'content', ''.join(lines))
+        setattr(args, 'content', sys.stdin.read())
     else:
-        try:
-            args.content = args.content.replace('\\n','\r\n')
-        except AttributeError:
+        if not hasattr(args, 'content'):
             args.content = ''
 
     # attachment
@@ -157,12 +155,15 @@ def main():
                  args.tlayer,
                  args.debug,
                  args.fromaddr,
-                 args.passwd,
+                 args.password,
                  to,
                  msg)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(str(e))
 
 
