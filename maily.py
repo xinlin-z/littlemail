@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Command line SMTP email sending tool in pure Python!
+
+Author:   xinlin-z
+Github:   https://github.com/xinlin-z/maily
+Blog:     https://cs.pynote.net
+License:  MIT
+"""
 import os
 import sys
 import argparse
@@ -10,7 +18,7 @@ from email import encoders
 import mimetypes
 
 
-def _server_send(smtp, port, timeout, tlayer, debug,
+def _server_send(smtp, port, timeout, protocol, debug,
                  fromaddr, passwd, to, msg):
     # server parameters
     param = {'host': smtp,
@@ -23,7 +31,7 @@ def _server_send(smtp, port, timeout, tlayer, debug,
         else:
             server = smtplib.SMTP(**param)
     else:
-        if tlayer in ('plain', 'tls'):
+        if protocol in ('plain', 'tls'):
             server = smtplib.SMTP(**param)
         else:  # ssl
             server = smtplib.SMTP_SSL(**param)
@@ -31,7 +39,7 @@ def _server_send(smtp, port, timeout, tlayer, debug,
         if sys.version.split()[0][:3] >= '3.5':
             server.set_debuglevel(2)
         else: server.set_debuglevel(1)
-    if port == 587 or tlayer == 'tls':
+    if port == 587 or protocol == 'tls':
         server.starttls()
     server.login(fromaddr, passwd)
     server.sendmail(fromaddr, to, msg.as_string())
@@ -98,7 +106,7 @@ def main():
                         help='SMTP server of sender email account')
     parser.add_argument('--port', type=int, default=587,
                         help='port for SMTP server, default is 587')
-    parser.add_argument('--tlayer', default='tls',
+    parser.add_argument('--protocol', default='tls',
                                choices=['plain','ssl','tls'],
                     help='transportation layer protocol, default is TLS')
     parser.add_argument('--timeout', type=int, default=3,
@@ -131,13 +139,13 @@ def main():
     # transportation layer
     if (args.port not in (25, 465, 587) and
             args.tlayer is None):
-        raise ValueError('You have to set the --tlayer option, '
+        raise ValueError('You have to set the --protocol option, '
                          'since the customized port number is specified.')
-    if ((args.port == 25 and args.tlayer != 'plain') or
-            (args.port == 465 and args.tlayer != 'ssl') or
-            (args.port == 587 and args.tlayer != 'tls')):
+    if ((args.port == 25 and args.protocol != 'plain') or
+            (args.port == 465 and args.protocol != 'ssl') or
+            (args.port == 587 and args.protocol != 'tls')):
         raise ValueError('You use the well-known port, but the '
-                         'corresponding --tlayer option is wrong.')
+                         'corresponding --protocol option is wrong.')
 
     # good to go
     msg, to = _get_msg_to(args.subject,
@@ -152,7 +160,7 @@ def main():
     _server_send(args.smtp,
                  args.port,
                  args.timeout,
-                 args.tlayer,
+                 args.protocol,
                  args.debug,
                  args.fromaddr,
                  args.password,

@@ -1,51 +1,57 @@
-* [maily](#maily)
-    * [How to Use](#How-to-Use)
-    * [Example](#Example)
+{toc}
 
-# maily
+# Intro
 
-A command-line SMTP email sending tool in Python, which send **one email per
-command**.
+Maily is a command-line SMTP email sending tool in pure Python, which
+send **one email per command**.
 
 The purpose of maily is to have a very simple and easy-to-use
-command-line SMTP email sending tool in pure Python. (I think mail or mailx
-is a bit complicated in use.)
+command-line SMTP email sending tool in pure Python.
+(I think mail or mailx is a bit complicated in use.)
 
-## How to Use
+## Installation
 
-``` shell
-$ python3 maily.py -h
+```shell
+$ pip3 install maily
 ```
 
-> Please be aware of the default values for options!
+## Usage
 
-## Example
-
-> Some important options are not showed in the examples below!
+Show help and **default values** for a few options:
 
 ``` shell
-$ python3 maily.py -s 'hi maily' --to to@address.com \
-> --fromaddr from@address.com --passwd here_is_passwor \
-> --smtp smtp.server.com \
-> -c 'your email content goes here!'
+$ python3 -m maily -h
 ```
 
-`maily` also support to fill the content through pipe:
+Example:
 
-``` shell
-$ echo -e 'your content goes here:\n how are you?' | python3 maily.py \
-> -s 'hi maily' --to to@address.com --fromaddr from@address.com \
-> --passwd here_is_passwor --smtp smtp.server.com 
+```shell
+$ python3 -m maily -s test -c hello -f 12345@qq.com --to 54321@qq.com -p abcde --smtp smtp.qq.com --protocol tls
 ```
 
-Or:
+`-c` is optional, which means you can send email with empty content.
+And there are two other ways to fill content. Below are examples:
 
-``` shell
-$ python3 maily.py -s 'hi maily' --to to@address.com \
-> --fromaddr from@address.com --passwd here_is_passwor \
-> --smtp smtp.server.com < email_content.txt
+(1) By using echo and pipe, you can insert escape character in command line
+into your content:
+
+```shell
+$ echo -e 'hello\n\nI am xinlin-z!\n\nBR\nxinlin-z' | python3 -m maily <...>
 ```
+
+(2) By using input redirection:
+
+```shell
+$ python3 -m maily <...> < email.txt
+```
+
+`-a` option can accept more than one attachments, like:
+
+```shell
+$ python3 -m maily <...> -a afile.tar.gz bfile.py cfile.txt <...>
+```
+
+If there is something wrong, try to add `--debug` option to check.
 
 Have fun! ^___^
-
 
