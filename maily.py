@@ -18,8 +18,8 @@ from email import encoders
 import mimetypes
 
 
-def _server_send(smtp, port, timeout, protocol, debug,
-                 fromaddr, passwd, to, msg):
+def _smtp_send(smtp, port, timeout, protocol, debug,
+                 fromaddr, passwd, addrs, msg):
     # server parameters
     param = {'host': smtp,
              'port': port,
@@ -42,16 +42,16 @@ def _server_send(smtp, port, timeout, protocol, debug,
     if port == 587 or protocol == 'tls':
         server.starttls()
     server.login(fromaddr, passwd)
-    server.sendmail(fromaddr, to, msg.as_string())
+    server.sendmail(fromaddr, addrs, msg.as_string())
     server.quit()
 
 
-def _get_msg_to(subject, text, contype, attas, to, cc, bcc, from_addr):
+def _get_msg_addrs(subject, text, contype, attas, to, cc, bcc, fromaddr):
     # construct the mail
     msg = MIMEMultipart('mixed')
     msg.attach(MIMEText(text, contype, 'utf-8'))
     msg['Subject'] = subject
-    msg['From'] = from_addr
+    msg['From'] = fromaddr
     msg['To'] = ';'.join(to)
     msg['Cc'] = ';'.join(cc)
     to.extend(cc)
@@ -148,23 +148,23 @@ def main():
                          'corresponding --protocol option is wrong.')
 
     # good to go
-    msg, to = _get_msg_to(args.subject,
-                          args.content,
-                          args.contype,
-                          args.attachment,
-                          args.to,
-                          args.cc,
-                          args.bcc,
-                          args.fromaddr)
+    msg, addrs = _get_msg_addrs(args.subject,
+                                args.content,
+                                args.contype,
+                                args.attachment,
+                                args.to,
+                                args.cc,
+                                args.bcc,
+                                args.fromaddr)
 
-    _server_send(args.smtp,
+    _smtp_send(args.smtp,
                  args.port,
                  args.timeout,
                  args.protocol,
                  args.debug,
                  args.fromaddr,
                  args.password,
-                 to,
+                 addrs,
                  msg)
 
 

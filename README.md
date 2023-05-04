@@ -53,5 +53,7 @@ $ python3 -m maily <...> -a afile.tar.gz bfile.py cfile.txt <...>
 
 If there is something wrong, try to add `--debug` option to check.
 
+`--to`, `--cc` and `--bcc` options are all support multiple addresses.
+
 Have fun! ^___^
 
