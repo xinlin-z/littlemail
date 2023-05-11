@@ -150,7 +150,7 @@ def _main() -> None:
                         help='address(es) of bcc (blind carbon copy)')
     parser.add_argument('-f', '--fromaddr', required=True,
                         help='address of sender')
-    parser.add_argument('-p', '--password', required=True,
+    parser.add_argument('-p', '--password',
                         help='password of sender email account')
     parser.add_argument('--smtp', required=True,
                         help='SMTP server of sender email account')
@@ -196,6 +196,13 @@ def _main() -> None:
             (args.port == 587 and args.protocol != 'tls')):
         raise ValueError('You use the well-known port, but the '
                          'corresponding --protocol option is wrong.')
+
+    # password
+    if args.password is None:
+        try:
+            args.password = os.environ['MAILY_PASSWD']
+        except KeyError:
+            raise ValueError('Password needed.')
 
     # good to go
     send_email(subject=args.subject,
