@@ -18,8 +18,15 @@ from email import encoders
 import mimetypes
 
 
-def _smtp_send(smtp, port, timeout, protocol, debug,
-                 fromaddr, passwd, addrs, msg):
+def _smtp_send(smtp: str,
+               port: int,
+               timeout: int,
+               protocol: str,
+               debug: bool,
+               fromaddr: str,
+               passwd: str,
+               addrs: list[str],
+               msg: MIMEMultipart) -> None:
     # server parameters
     param = {'host': smtp,
              'port': port,
@@ -27,14 +34,14 @@ def _smtp_send(smtp, port, timeout, protocol, debug,
     # create server
     if port in (25, 465, 587):
         if port == 465:
-            server = smtplib.SMTP_SSL(**param)
+            server = smtplib.SMTP_SSL(**param)  # type: ignore
         else:
-            server = smtplib.SMTP(**param)
+            server = smtplib.SMTP(**param)      # type: ignore
     else:
         if protocol in ('plain', 'tls'):
-            server = smtplib.SMTP(**param)
+            server = smtplib.SMTP(**param)      # type: ignore
         else:  # ssl
-            server = smtplib.SMTP_SSL(**param)
+            server = smtplib.SMTP_SSL(**param)  # type: ignore
     if debug:
         if sys.version.split()[0][:3] >= '3.5':
             server.set_debuglevel(2)
@@ -46,7 +53,14 @@ def _smtp_send(smtp, port, timeout, protocol, debug,
     server.quit()
 
 
-def _get_msg_addrs(subject, text, contype, attas, to, cc, bcc, fromaddr):
+def _get_msg_addrs(subject: str,
+                   text: str,
+                   contype: str,
+                   alist: list[str],
+                   to: list[str],
+                   cc: list[str],
+                   bcc: list[str],
+                   fromaddr: str) -> tuple[MIMEMultipart,list[str]]:
     # construct the mail
     msg = MIMEMultipart('mixed')
     msg.attach(MIMEText(text, contype, 'utf-8'))
@@ -57,29 +71,65 @@ def _get_msg_addrs(subject, text, contype, attas, to, cc, bcc, fromaddr):
     to.extend(cc)
     to.extend(bcc)
     # attachments
-    for i in range(len(attas)):
-        ftype, encoding = mimetypes.guess_type(attas[i])
+    for i in range(len(alist)):
+        ftype, encoding = mimetypes.guess_type(alist[i])
         if (ftype is None
                 or encoding is not None):
             ftype = 'application/octet-stream'
         maintype, subtype = ftype.split('/')
         att = MIMEBase(maintype, subtype)
         att.add_header('Content-Disposition','attachement',
-                       filename=os.path.basename(attas[i]))
+                       filename=os.path.basename(alist[i]))
         att.add_header('Content-ID', '<%d>'%i)
         att.add_header('X-Attachment-Id', '<%d>'%i)
-        with open(attas[i], 'rb') as f:
+        with open(alist[i], 'rb') as f:
             att.set_payload(f.read())
         encoders.encode_base64(att)
         msg.attach(att)
     return msg, to
 
 
+def send_email(*,
+               subject: str,
+               text: str,
+               contype: str,
+               alist: list[str],
+               to: list[str],
+               cc: list[str],
+               bcc: list[str],
+               fromaddr: str,
+               smtp: str,
+               port: int,
+               timeout: int,
+               protocol: str,
+               passwd: str,
+               debug: bool) -> None:
+    """ Sending Email """
+    msg, addrs = _get_msg_addrs(subject,
+                                text,
+                                contype,
+                                alist,
+                                to,
+                                cc,
+                                bcc,
+                                fromaddr)
+    _smtp_send(smtp,
+               port,
+               timeout,
+               protocol,
+               debug,
+               fromaddr,
+               passwd,
+               addrs,
+               msg)
+    return
+
+
 _VER = 'V0.31 by xinlin-z with love'\
        ' (https://github.com/xinlin-z/maily)'
 
 
-def main():
+def _main() -> None:
     # command line options
     parser = argparse.ArgumentParser()
     parser.add_argument('-V', '--version', action='version', version=_VER)
@@ -148,29 +198,43 @@ def main():
                          'corresponding --protocol option is wrong.')
 
     # good to go
-    msg, addrs = _get_msg_addrs(args.subject,
-                                args.content,
-                                args.contype,
-                                args.attachment,
-                                args.to,
-                                args.cc,
-                                args.bcc,
-                                args.fromaddr)
+    send_email(subject=args.subject,
+               text=args.content,
+               contype=args.contype,
+               alist=args.attachment,
+               to=args.to,
+               cc=args.cc,
+               bcc=args.bcc,
+               fromaddr=args.fromaddr,
+               smtp=args.smtp,
+               port=args.port,
+               timeout=args.timeout,
+               protocol=args.protocol,
+               passwd=args.password,
+               debug=args.debug)
+    # msg, addrs = _get_msg_addrs(args.subject,
+    #                             args.content,
+    #                             args.contype,
+    #                             args.attachment,
+    #                             args.to,
+    #                             args.cc,
+    #                             args.bcc,
+    #                             args.fromaddr)
 
-    _smtp_send(args.smtp,
-                 args.port,
-                 args.timeout,
-                 args.protocol,
-                 args.debug,
-                 args.fromaddr,
-                 args.password,
-                 addrs,
-                 msg)
+    # _smtp_send(args.smtp,
+    #              args.port,
+    #              args.timeout,
+    #              args.protocol,
+    #              args.debug,
+    #              args.fromaddr,
+    #              args.password,
+    #              addrs,
+    #              msg)
 
 
 if __name__ == '__main__':
     try:
-        main()
+        _main()
     except Exception as e:
         print(str(e))
 
