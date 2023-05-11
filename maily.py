@@ -202,7 +202,8 @@ def _main() -> None:
         try:
             args.password = os.environ['MAILY_PASSWD']
         except KeyError:
-            raise ValueError('Password needed.')
+            raise ValueError('Password is missing.')
+    args.password = args.password.strip()
 
     # good to go
     send_email(subject=args.subject,
