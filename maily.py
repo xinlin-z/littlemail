@@ -91,19 +91,19 @@ def _get_msg_addrs(subject: str,
 
 def send_email(*,
                subject: str,
-               text: str,
-               contype: str,
-               alist: list[str],
+               text: str = '',
+               contype: str = 'plain',
+               alist: list[str] = [],
                to: list[str],
-               cc: list[str],
-               bcc: list[str],
+               cc: list[str] = [],
+               bcc: list[str] = [],
                fromaddr: str,
                smtp: str,
-               port: int,
-               timeout: int,
-               protocol: str,
-               passwd: str,
-               debug: bool) -> None:
+               port: int = 587,
+               timeout: int = 3,
+               protocol: str = 'tls',
+               passwd: str = '',
+               debug: bool = False) -> None:
     """ Sending Email """
     msg, addrs = _get_msg_addrs(subject,
                                 text,
@@ -113,6 +113,15 @@ def send_email(*,
                                 cc,
                                 bcc,
                                 fromaddr)
+
+    # password
+    if passwd == '':
+        try:
+            passwd = os.environ['MAILY_PASSWD']
+        except KeyError:
+            raise ValueError('Password is missing.')
+    passwd = passwd.strip()
+
     _smtp_send(smtp,
                port,
                timeout,
