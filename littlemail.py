@@ -3,7 +3,7 @@
 Command line SMTP email sending tool in pure Python!
 
 Author:   xinlin-z
-Github:   https://github.com/xinlin-z/maily
+Github:   https://github.com/xinlin-z/littlemail
 Blog:     https://cs.pynote.net
 License:  MIT
 """
@@ -117,7 +117,7 @@ def send_email(*,
     # password
     if passwd == '':
         try:
-            passwd = os.environ['MAILY_PASSWD']
+            passwd = os.environ['LITTLEMAIL_PASSWD']
         except KeyError:
             raise ValueError('Password is missing.')
     passwd = passwd.strip()
@@ -135,7 +135,7 @@ def send_email(*,
 
 
 _VER = 'V0.31 by xinlin-z with love'\
-       ' (https://github.com/xinlin-z/maily)'
+       ' (https://github.com/xinlin-z/littlemail)'
 
 
 def _main() -> None:
@@ -171,7 +171,7 @@ def _main() -> None:
     parser.add_argument('--timeout', type=int, default=3,
                     help='connection timeout for smtp server, default is 3s')
     parser.add_argument('--debug', action='store_true',
-                    help='show debug info between SMTP server and maily')
+                    help='show debug info between SMTP server and littlemail')
     args = parser.parse_args()
 
     # subject
@@ -209,7 +209,7 @@ def _main() -> None:
     # password
     if args.password is None:
         try:
-            args.password = os.environ['MAILY_PASSWD']
+            args.password = os.environ['LITTLEMAIL_PASSWD']
         except KeyError:
             raise ValueError('Password is missing.')
     args.password = args.password.strip()
