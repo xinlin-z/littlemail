@@ -36,4 +36,4 @@ jobs:
         mypy --strict littlemail.py
     - name: send notification email
       run: |
-        python littlemail.py -s '[littlemail] OnCommit OK!' -f 3003974@qq.com --to 3003974@qq.com xinlin.zhang@hotmail.com --smtp smtp.qq.com -p ${{QQMAIL_PASS4GITHUB}} --debug
+        python littlemail.py -s '[littlemail] OnCommit OK!' -f 3003974@qq.com --to 3003974@qq.com xinlin.zhang@hotmail.com --smtp smtp.qq.com -p ${{secrets.QQMAIL_PASS4GITHUB}} --debug
