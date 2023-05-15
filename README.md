@@ -1,3 +1,5 @@
+[![MasterUpdate](https://github.com/xinlin-z/littlemail/actions/workflows/master_update.yml/badge.svg?branch=master)](https://github.com/xinlin-z/littlemail/actions/workflows/master_update.yml)
+
 * [Intro](#Intro)
 * [Installation](#Installation)
 * [Usage](#Usage)

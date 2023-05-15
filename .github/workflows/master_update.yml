@@ -1,6 +1,3 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
 name: MasterUpdate
 
 on:
@@ -8,32 +5,67 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:  # manual trigger
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  Lint-Mypy-Send:
+    strategy:
+      matrix:
+        # if os name is wrong, queued forever
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        ver: ["3.10","3.11"]
+    runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.10
+    - uses: actions/checkout@v3    # uses actions
+    - name: Set up Python
       uses: actions/setup-python@v3
       with:
-        python-version: "3.10"
+        python-version: ${{ matrix.ver }}
     - name: Install dependencies and tools
-      run: |
+      shell: bash    # default is bash in Linux and Macos, but not Windows
+      run: |  # newline is effective,  run scripts
         python -m pip install --upgrade pip
         pip install flake8 mypy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        ls -lha > email.txt
+        echo '--------' >> email.txt
+        echo $(date) >> email.txt
+        echo $(python -V) >> email.txt
+        echo $(uname -a) >> email.txt
+        echo $(bash --version) >> email.txt
+        echo '--------' >> email.txt
+        # some context variables
+        echo ${{ github.workflow }} >> email.txt
+        echo ${{ github.job }} >> email.txt
+        echo ${{ github.actor }} >> email.txt
+        echo ${{ github.event_name }} >> email.txt
+        echo ${{ runner.os }} >> email.txt
+        echo ${{ github.repository }} >> email.txt
+        echo ${{ github.ref }} >> email.txt
+        echo '--------' >> email.txt
     - name: Lint with flake8
+      continue-on-error: true
+      shell: bash
       run: |
-        flake8 . --count
+        flake8 . --count | tee -a email.txt
     - name: Check with mypy
+      continue-on-error: true
+      shell: bash
       run: |
-        mypy --strict littlemail.py
-    - name: send notification email
+        mypy --strict . | tee -a email.txt
+    - name: Send Email
+      if: matrix.os != 'windows-latest'
+      shell: bash
       run: |
-        echo ${{secrets.QQMAIL_PASS4GITHUB}}
-        python littlemail.py -s '[littlemail] MasterUpdate OK!' -f 3003974@qq.com --to ${{secrets.TO_LIST}} --smtp smtp.qq.com -p ${{secrets.QQMAIL_PASS4GITHUB}} --debug
+        python littlemail.py\
+          -s "[littlemail] MasterUpdate ${{matrix.os}} Python${{matrix.ver}}"\
+          -f 3003974@qq.com\
+          --to ${{secrets.TO_LIST}}\
+          --smtp smtp.qq.com\
+          -p ${{secrets.QQMAIL_PASS4GITHUB}}\
+          --debug < email.txt
+
 
