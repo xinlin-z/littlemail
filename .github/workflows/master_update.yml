@@ -25,6 +25,7 @@ jobs:
       with:
         python-version: ${{ matrix.ver }}
     - name: Install dependencies and tools
+      if: ${{ matrix.os != 'windows-latest' }}
       shell: bash    # default is bash in Linux and Macos, but not Windows
       run: |  # newline is effective,  run scripts
         python -m pip install --upgrade pip
@@ -57,7 +58,7 @@ jobs:
       run: |
         mypy --strict . | tee -a email.txt
     - name: Send Email
-      if: matrix.os != 'windows-latest'
+      if: ${{ matrix.os != 'windows-latest' }}
       shell: bash
       run: |
         python littlemail.py\
@@ -67,5 +68,15 @@ jobs:
           --smtp smtp.qq.com\
           -p ${{secrets.QQMAIL_PASS4GITHUB}}\
           --debug < email.txt
+    - name: Send Email
+      if: ${{ matrix.os == 'windows-latest' }}
+      run: |
+        python littlemail.py`
+          -s "[littlemail] MasterUpdate ${{matrix.os}} Python${{matrix.ver}}"`
+          -f 3003974@qq.com`
+          --to ${{secrets.TO_LIST}}`
+          --smtp smtp.qq.com`
+          -p ${{secrets.QQMAIL_PASS4GITHUB}}`
+          --debug
 
 
