@@ -31,7 +31,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 mypy
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        ls -lha > email.txt
+        ls -lha | grep -v email.txt > email.txt
         echo '--------' >> email.txt
         echo $(date) >> email.txt
         echo $(python -V) >> email.txt
@@ -48,11 +48,13 @@ jobs:
         echo ${{ github.ref }} >> email.txt
         echo '--------' >> email.txt
     - name: Lint with flake8
+      if: ${{ matrix.os != 'windows-latest' }}
       continue-on-error: true
       shell: bash
       run: |
         flake8 . --count | tee -a email.txt
     - name: Check with mypy
+      if: ${{ matrix.os != 'windows-latest' }}
       continue-on-error: true
       shell: bash
       run: |
@@ -68,15 +70,9 @@ jobs:
           --smtp smtp.qq.com\
           -p ${{secrets.QQMAIL_PASS4GITHUB}}\
           --debug < email.txt
-    - name: Send Email
+    - name: Send Email on Windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: |
-        python littlemail.py`
-          -s "[littlemail] MasterUpdate ${{matrix.os}} Python${{matrix.ver}}"`
-          -f 3003974@qq.com`
-          --to ${{secrets.TO_LIST}}`
-          --smtp smtp.qq.com`
-          -p ${{secrets.QQMAIL_PASS4GITHUB}}`
-          --debug
+        python littlemail.py -s "[littlemail] MasterUpdate ${{matrix.os}} Python${{matrix.ver}}" -f 3003974@qq.com --to ${{secrets.TO_LIST}} --smtp smtp.qq.com -p ${{secrets.QQMAIL_PASS4GITHUB}} --debug
 
 
