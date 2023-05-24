@@ -1,5 +1,6 @@
 name: MasterUpdate
 
+
 on:
   push:
     branches: [ "master" ]
@@ -7,8 +8,6 @@ on:
     branches: [ "master" ]
   workflow_dispatch:  # manual trigger
 
-permissions:
-  contents: read
 
 jobs:
   Lint-Mypy-Send:
@@ -48,12 +47,14 @@ jobs:
         echo ${{ github.ref }} >> email.txt
         echo '--------' >> email.txt
     - name: Lint with flake8
+      id: flake8
       if: ${{ matrix.os != 'windows-latest' }}
       continue-on-error: true
       shell: bash
       run: |
         flake8 . --count | tee -a email.txt
     - name: Check with mypy
+      id: mypy
       if: ${{ matrix.os != 'windows-latest' }}
       continue-on-error: true
       shell: bash
