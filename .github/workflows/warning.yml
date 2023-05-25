@@ -1,0 +1,29 @@
+name: Warning
+
+
+on:
+  schedule:
+    # UTC time
+    - cron: '55 0-14 * * *'
+
+
+jobs:
+  Relex-Email:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.11"
+    - name: send email
+      run: |
+        python littlemail.py\
+          -s "[Relex] Close your eye and meditate a while..."\
+          -f 3003974@qq.com\
+          --to ${{secrets.TO_LIST}}\
+          --smtp smtp.qq.com\
+          -p ${{secrets.QQMAIL_PASS4GITHUB}}\
+          --debug
+
+
