@@ -4,7 +4,7 @@ name: Warning
 on:
   schedule:
     # UTC time
-    - cron: '55 0-14 * * *'
+    - cron: '55 0-14/2 * * *'
 
 
 jobs:
