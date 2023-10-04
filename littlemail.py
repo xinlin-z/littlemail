@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Command line SMTP email sending tool in pure Python!
+Command line SMTP email sending tool in Python!
 
 Author:   xinlin-z
 Github:   https://github.com/xinlin-z/littlemail
@@ -42,10 +42,12 @@ def _smtp_send(smtp: str,
             server = smtplib.SMTP(**param)      # type: ignore
         else:  # ssl
             server = smtplib.SMTP_SSL(**param)  # type: ignore
+    # if print debug info
     if debug:
         if sys.version.split()[0][:3] >= '3.5':
             server.set_debuglevel(2)
-        else: server.set_debuglevel(1)
+        else:
+            server.set_debuglevel(1)
     if port == 587 or protocol == 'tls':
         server.starttls()
     server.login(fromaddr, passwd)
@@ -102,9 +104,18 @@ def send_email(*,
                port: int = 587,
                timeout: int = 3,
                protocol: str = 'tls',
-               passwd: str = '',
+               passwd: str|None,
                debug: bool = False) -> None:
-    """ Sending Email """
+    """ sending email interface, can be called in code """
+    # password
+    if not passwd:
+        try:
+            passwd = os.environ['LITTLEMAIL_PASSWD']
+        except KeyError:
+            raise ValueError('Password is missing.')
+    passwd = passwd.strip()
+
+    # get msg and To addresses
     msg, addrs = _get_msg_addrs(subject,
                                 text,
                                 contype,
@@ -114,14 +125,7 @@ def send_email(*,
                                 bcc,
                                 fromaddr)
 
-    # password
-    if passwd == '':
-        try:
-            passwd = os.environ['LITTLEMAIL_PASSWD']
-        except KeyError:
-            raise ValueError('Password is missing.')
-    passwd = passwd.strip()
-
+    # go
     _smtp_send(smtp,
                port,
                timeout,
@@ -131,10 +135,9 @@ def send_email(*,
                passwd,
                addrs,
                msg)
-    return
 
 
-_VER = 'V0.31 by xinlin-z with love'\
+_VER = 'V0.32 by xinlin-z'\
        ' (https://github.com/xinlin-z/littlemail)'
 
 
@@ -145,7 +148,7 @@ def _main() -> None:
     parser.add_argument('-s', '--subject', required=True,
                         help='subject for this email')
     parser.add_argument('-c', '--content', default=argparse.SUPPRESS,
-                        help='email content, empty is allowed')
+                        help='email content, may be empty')
     parser.add_argument('-t', '--contype', default='plain',
                         choices=['plain', 'html'],
                         help='content type, default is plain')
@@ -164,7 +167,7 @@ def _main() -> None:
     parser.add_argument('--smtp', required=True,
                         help='SMTP server of sender email account')
     parser.add_argument('--port', type=int, default=587,
-                        help='port for SMTP server, default is 587')
+                        help='port number of SMTP server, default is 587')
     parser.add_argument('--protocol', default='tls',
                                choices=['plain','ssl','tls'],
                     help='transportation layer protocol, default is TLS')
@@ -203,16 +206,8 @@ def _main() -> None:
     if ((args.port == 25 and args.protocol != 'plain') or
             (args.port == 465 and args.protocol != 'ssl') or
             (args.port == 587 and args.protocol != 'tls')):
-        raise ValueError('You use the well-known port, but the '
+        raise ValueError('You use a well-known port, but the '
                          'corresponding --protocol option is wrong.')
-
-    # password
-    if args.password is None:
-        try:
-            args.password = os.environ['LITTLEMAIL_PASSWD']
-        except KeyError:
-            raise ValueError('Password is missing.')
-    args.password = args.password.strip()
 
     # good to go
     send_email(subject=args.subject,
@@ -229,24 +224,6 @@ def _main() -> None:
                protocol=args.protocol,
                passwd=args.password,
                debug=args.debug)
-    # msg, addrs = _get_msg_addrs(args.subject,
-    #                             args.content,
-    #                             args.contype,
-    #                             args.attachment,
-    #                             args.to,
-    #                             args.cc,
-    #                             args.bcc,
-    #                             args.fromaddr)
-
-    # _smtp_send(args.smtp,
-    #              args.port,
-    #              args.timeout,
-    #              args.protocol,
-    #              args.debug,
-    #              args.fromaddr,
-    #              args.password,
-    #              addrs,
-    #              msg)
 
 
 if __name__ == '__main__':
