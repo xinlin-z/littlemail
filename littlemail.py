@@ -70,8 +70,6 @@ def _get_msg_addrs(subject: str,
     msg['From'] = fromaddr
     msg['To'] = ';'.join(to)
     msg['Cc'] = ';'.join(cc)
-    to.extend(cc)
-    to.extend(bcc)
     # attachments
     for i in range(len(alist)):
         ftype, encoding = mimetypes.guess_type(alist[i])
@@ -88,7 +86,7 @@ def _get_msg_addrs(subject: str,
             att.set_payload(f.read())
         encoders.encode_base64(att)
         msg.attach(att)
-    return msg, to
+    return msg, (to+cc)+bcc
 
 
 def send_email(*,
@@ -109,6 +107,10 @@ def send_email(*,
     """ sending email interface """
     # Since it could be called in code,
     # I put the parameters' checking here for both flow.
+
+    # The default [] here is fine,
+    # since there is no code to modify the default value.
+    # It's either default [] or user input list.
 
     # subject
     subject = subject.strip()
