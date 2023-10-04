@@ -89,8 +89,8 @@ def _get_msg_addrs(subject: str,
     return msg, (to+cc)+bcc
 
 
-def send_email(*,
-               subject: str,
+def send_email(subject: str,
+               *,
                text: str = '',
                contype: str = 'plain',
                alist: list[str] = [],
