@@ -106,7 +106,29 @@ def send_email(*,
                protocol: str = 'tls',
                passwd: str|None,
                debug: bool = False) -> None:
-    """ sending email interface, can be called in code """
+    """ sending email interface """
+    # Since it could be called in code,
+    # I put the parameters' checking here for both flow.
+
+    # subject
+    subject = subject.strip()
+    if subject == '':
+        raise ValueError('Subject can not be empty.')
+
+    # port and protocol
+    if protocol not in ('plain','ssl','tls'):
+        raise ValueError('Unkown protocol %s.' % protocol)
+    if ((port == 25 and protocol != 'plain') or
+            (port == 465 and protocol != 'ssl') or
+            (port == 587 and protocol != 'tls')):
+        raise ValueError('You use a well-known port, but the '
+                         'corresponding protocol is wrong.')
+
+    # attachment
+    for f in alist:
+        if os.path.isfile(f) is False:
+            raise ValueError('Attachement %s is not a file.' % f)
+
     # password
     if not passwd:
         try:
@@ -124,7 +146,6 @@ def send_email(*,
                                 cc,
                                 bcc,
                                 fromaddr)
-
     # go
     _smtp_send(smtp,
                port,
@@ -177,39 +198,19 @@ def _main() -> None:
                     help='show debug info between SMTP server and littlemail')
     args = parser.parse_args()
 
-    # subject
-    if args.subject.strip() == '':
-        raise ValueError('--subject(-s) option can not be empty.')
-
     # content
     # User input by -c is raw string, \n is 2 char, \\ and n.
     # By echo -e and file redirection, we get normal string.
     if not sys.stdin.isatty():
         if hasattr(args, 'content'):
             raise ValueError('--content(-c) option conflicts with '
-                             'redirection. You cannot use both!')
+                             'redirection. You cannot use both '
+                             'simultaneously!')
         setattr(args, 'content', sys.stdin.read())
     else:
         if not hasattr(args, 'content'):
             args.content = ''
 
-    # attachment
-    for item in args.attachment:
-        if os.path.isfile(item) is False:
-            raise ValueError('Attachement %s is not a file.' % item)
-
-    # transportation layer
-    if (args.port not in (25, 465, 587) and
-            args.tlayer is None):
-        raise ValueError('You have to set the --protocol option, '
-                         'since the customized port number is specified.')
-    if ((args.port == 25 and args.protocol != 'plain') or
-            (args.port == 465 and args.protocol != 'ssl') or
-            (args.port == 587 and args.protocol != 'tls')):
-        raise ValueError('You use a well-known port, but the '
-                         'corresponding --protocol option is wrong.')
-
-    # good to go
     send_email(subject=args.subject,
                text=args.content,
                contype=args.contype,
