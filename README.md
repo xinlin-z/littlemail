@@ -1,75 +1,82 @@
 [![MasterUpdate](https://github.com/xinlin-z/littlemail/actions/workflows/master_update.yml/badge.svg?branch=master)](https://github.com/xinlin-z/littlemail/actions/workflows/master_update.yml)
 
-* [Intro](#Intro)
+# littlemail
+
 * [Installation](#Installation)
 * [Usage](#Usage)
 * [API](#API)
 
-# Intro
+Littlemail is a straight-forward command-line SMTP email sending tool
+in Python, which sends **one email per command**. (If you send many
+emails, every sending will make a new connection with the smtp server.)
 
-Littlemail is a command-line SMTP email sending tool in pure Python, which
-send **one email per command**.
-
-The purpose of this repo is to have a very simple and easy-to-use
-command-line SMTP email sending tool in pure Python.
-(I think mail or mailx is a bit complicated in use.)
-
-# Installation
+## Installation
 
 ```shell
 $ pip install littlemail
 ```
 
-# Usage
+## Usage
 
-Show help and **default values** for a few options:
+There is no way to reduce parameters provided in command-line, since
+that's the way of email. So, please refer to the inline help for options
+you need. Fortunately, many options have default value.
 
 ``` shell
-$ python -m littlemail -h
+$ python -m littlemail -h  # inline help
 ```
 
-Example:
+Anyway, here is a minimal example and a few lines of explanation:
 
 ```shell
-$ python -m littlemail -s test -c hello -f 12345@qq.com --to 54321@qq.com -p abcde --smtp smtp.qq.com --protocol tls
+$ python -m littlemail -s test [-c hello] \
+                -f 12345@qq.com \
+                --to 54321@qq.com \
+                --smtp smtp.qq.com [-p abcdefg]
 ```
 
-`-c` is optional, which means you can send email with empty content.
-And there are two other ways to fill content. Below are examples:
-
-(1) By using echo and pipe, you can insert escape character in command line
-into your content:
+`-c` means the email content, which is optional. That means you can
+send empty-content email. And this optional parameter enables the
+capability of littlemail to get content from pipe (input
+redirection), which might be easier for you to construct your message,
+such as:
 
 ```shell
-$ echo -e 'hello\n\nI am xinlin-z!\n\nBR\nxinlin-z' | python -m littlemail <...>
+$ python -m littlemail <...> < my_email_content.txt
 ```
 
-(2) By using input redirection:
+`-s` represents subject, which is mandatory and cannot be empty.
 
-```shell
-$ python -m littlemail <...> < email.txt
-```
+`-p` stands for password, and it is optional. When it's missing,
+littlemail tries to get password from `LITTLEMAIL_PASSWD`
+environment variable.
 
-`-a` option can accept more than one attachments, like:
+When something goes wrong, try `--debug`.
 
-```shell
-$ python -m littlemail <...> -a afile.tar.gz bfile.py cfile.txt <...>
-```
-
-If there is something wrong, try to add `--debug` option to check.
-
-`--to`, `--cc` and `--bcc` options are all support multiple addresses.
-
-`-p` is optional. When it's missing, littlemail tries to get password from
-`LITTLEMAIL_PASSWD` environment variable.
-
-# API
+## API
 
 There is an API you can invoke to send email in your code:
 
 ```python
+# import
 from littlemail import send_email
+# signature
+send_email(subject: str,
+           *,
+           text: str = '',
+           contype: str = 'plain',
+           alist: list[str] = [],
+           to: list[str],
+           cc: list[str] = [],
+           bcc: list[str] = [],
+           fromaddr: str,
+           smtp: str,
+           port: int = 587,
+           timeout: int = 3,
+           protocol: str = 'tls',
+           passwd: str|None,
+           debug: bool = False) -> None
 ```
 
-Have fun! ^___^
+`api_test.py` is used as an example and testcase for you try, have fun! ^___^
 
