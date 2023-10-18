@@ -61,22 +61,23 @@ There is an API you can invoke to send email in your code:
 # import
 from littlemail import send_email
 # signature
-send_email(subject: str,
-           *,
-           text: str = '',
-           contype: str = 'plain',
-           alist: list[str] = [],
-           to: list[str],
-           cc: list[str] = [],
-           bcc: list[str] = [],
-           fromaddr: str,
-           smtp: str,
-           port: int = 587,
-           timeout: int = 3,
-           protocol: str = 'tls',
-           passwd: str|None,
-           debug: bool = False) -> None
+def send_email(subject: str,
+               *,
+               text: str = '',
+               contype: str = 'plain',
+               alist: list[str] = [],
+               to: list[str],
+               cc: list[str] = [],
+               bcc: list[str] = [],
+               fromaddr: str,
+               smtp: str,
+               port: int = 587,
+               timeout: int = 3,
+               protocol: str = 'tls',
+               passwd: str|None,
+               debug: bool = False) -> None: ...
 ```
 
-`api_test.py` is used as an example and testcase for you try, have fun! ^___^
+`api_test.py` is used as an example and testcase for you to try,
+have fun! ^___^
 
