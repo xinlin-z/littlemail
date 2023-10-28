@@ -18,6 +18,9 @@ from email import encoders
 import mimetypes
 
 
+__all__ = ['send_email']
+
+
 def _smtp_send(smtp: str,
                port: int,
                timeout: int,
