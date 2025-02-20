@@ -163,7 +163,7 @@ def send_email(subject: str,
                msg)
 
 
-_VER = 'littlemail V0.32 by xinlin-z'\
+_VER = 'littlemail V0.33 by xinlin-z'\
        ' (https://github.com/xinlin-z/littlemail)'
 
 

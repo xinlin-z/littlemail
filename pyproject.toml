@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = 'littlemail'
-version = '0.32'
+version = '0.33'
 requires-python = '>=3.8'
 description = 'Command-line SMTP email sending tool in Python'
 readme = 'README.md'
